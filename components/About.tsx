@@ -17,17 +17,17 @@ const About: React.FC = () => {
             transition={{ duration: 0.8 }}
             className="order-2 lg:order-1"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gold-dark mb-8">
-              Proč si vybrat právě mé masáže
+            <h2 className="text-4xl md:text-5xl font-serif text-text-dark mb-8 leading-tight">
+              Proč si vybrat <br/><span className="text-gold-dark italic">právě mé masáže</span>
             </h2>
             
-            <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg">
+            <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light">
               <p>
                 Ve své praxi kombinuji masáže zaměřené na uvolnění, regeneraci a podporu samoléčby těla, doplňky MediHub, léčivé rostliny a redoxní molekuly.
               </p>
               
-              <div className="bg-white/50 border border-gold/30 p-6 rounded-lg my-8">
-                <h3 className="font-serif text-xl text-gold-dark mb-4">Moje filozofie</h3>
+              <div className="bg-white/50 border-l-2 border-gold/50 p-6 my-8">
+                <h3 className="font-serif text-xl text-gold-dark mb-2">Moje filozofie</h3>
                 <p className="italic text-text-dark">
                   "Věřím, že tělo má obrovskou schopnost regenerace — když mu dáme správné podmínky."
                 </p>
@@ -37,18 +37,24 @@ const About: React.FC = () => {
                 Masáž, výživa, rostliny a moderní buněčná podpora nejsou oddělené světy. Společně tvoří funkční celek, který může přinést dlouhodobé výsledky.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
-                <div className="flex flex-col items-center text-center">
-                  <Leaf className="text-gold mb-2" size={32} />
-                  <span className="text-sm">Léčivé rostliny</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 pt-8 border-t border-gold/10">
+                <div className="flex flex-col items-center text-center group">
+                  <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">
+                    <Leaf className="text-gold-dark" size={24} strokeWidth={1.5} />
+                  </div>
+                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Léčivé rostliny</span>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <Sparkles className="text-gold mb-2" size={32} />
-                  <span className="text-sm">Redoxní molekuly</span>
+                <div className="flex flex-col items-center text-center group">
+                  <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">
+                    <Sparkles className="text-gold-dark" size={24} strokeWidth={1.5} />
+                  </div>
+                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Redoxní molekuly</span>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <Heart className="text-gold mb-2" size={32} />
-                  <span className="text-sm">Celostní přístup</span>
+                <div className="flex flex-col items-center text-center group">
+                  <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">
+                    <Heart className="text-gold-dark" size={24} strokeWidth={1.5} />
+                  </div>
+                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Celostní přístup</span>
                 </div>
               </div>
             </div>
@@ -60,13 +66,13 @@ const About: React.FC = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="order-1 lg:order-2 relative group"
+            className="order-1 lg:order-2 relative group px-4 sm:px-12"
           >
-            <div className="absolute -inset-4 bg-gold/20 rounded-lg blur-lg opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            <div className="absolute inset-0 bg-gold/10 rounded-t-[10rem] rounded-b-[2rem] transform translate-x-4 translate-y-4"></div>
             <img 
               src={IMAGES.owner} 
               alt="Tereza Rozkošná" 
-              className="relative rounded-lg shadow-2xl w-full object-cover h-[500px] sepia-[.1] hover:sepia-0 transition-all duration-500"
+              className="relative rounded-t-[10rem] rounded-b-[2rem] shadow-2xl w-full object-cover h-[600px] sepia-[.1] hover:sepia-0 transition-all duration-700"
             />
           </motion.div>
         </div>
