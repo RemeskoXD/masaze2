@@ -12,10 +12,14 @@
         theme: {
           extend: {
             colors: {
-              'deep-green': '#0a2f1c', // Tmavě zelený podklad
-              'gold': '#d4af37', // Zlatá
+              'beige-bg': '#FDFBF7',
+              'beige-dark': '#F4EFE6',
+              'gold': '#d4af37',
               'gold-light': '#f3e5ab',
               'gold-dark': '#aa8c2c',
+              'text-dark': '#2C2C2C',
+              'text-muted': '#5A5A5A',
+              'deep-green': '#0a2f1c', /* Keeping for fallback if needed */
               'soft-white': '#f9f9f9',
             },
             fontFamily: {
@@ -42,8 +46,8 @@
     </script>
     <style>
       body {
-        background-color: #0a2f1c;
-        color: #f9f9f9;
+        background-color: #FDFBF7;
+        color: #2C2C2C;
       }
       /* Text gradient helper */
       .text-gradient-gold {
@@ -65,12 +69,12 @@
         width: 10px;
       }
       ::-webkit-scrollbar-track {
-        background: #061f12;
+        background: #F4EFE6;
       }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #0a2f1c, #d4af37, #0a2f1c);
+        background: linear-gradient(180deg, #d4af37, #aa8c2c);
         border-radius: 5px;
-        border: 2px solid #061f12;
+        border: 2px solid #F4EFE6;
       }
     </style>
   <script type="importmap">
@@ -85,6 +89,7 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>

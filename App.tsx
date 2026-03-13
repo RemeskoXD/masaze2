@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -34,24 +35,36 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-deep-green text-soft-white font-sans antialiased selection:bg-gold selection:text-deep-green">
+    <div className="bg-beige-bg text-text-dark font-sans antialiased selection:bg-gold selection:text-white">
       <Navigation />
       <main>
         <Hero />
         <About />
         
         {/* Gallery Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 h-48 md:h-64">
+        <motion.div 
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: { opacity: 0 },
+            show: {
+              opacity: 1,
+              transition: { staggerChildren: 0.1 }
+            }
+          }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-0 h-48 md:h-64"
+        >
            {/* 
               Posunutí obrázků dolů (object-[50%_35%]): 
               Obrázek se zarovná tak, že bod ve 35% jeho výšky (horní třetina) bude uprostřed.
               Tím se obrázek vizuálně posune dolů a odhalí se horní část s rukama/masáží.
            */}
-           <img src={IMAGES.massage2} alt="Atmosphere" className="w-full h-full object-cover object-[50%_35%] opacity-80 hover:opacity-100 transition duration-500" />
-           <img src={IMAGES.massage4} alt="Candles" className="w-full h-full object-cover object-[50%_35%] opacity-80 hover:opacity-100 transition duration-500" />
-           <img src={IMAGES.massage5} alt="Oils" className="w-full h-full object-cover object-[50%_35%] opacity-80 hover:opacity-100 transition duration-500" />
-           <img src={IMAGES.massage6} alt="Relax" className="w-full h-full object-cover object-[50%_35%] opacity-80 hover:opacity-100 transition duration-500" />
-        </div>
+           <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage2} alt="Atmosphere" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
+           <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage4} alt="Candles" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
+           <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage5} alt="Oils" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
+           <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage6} alt="Relax" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
+        </motion.div>
 
         <Services />
         <ReservationSystem />

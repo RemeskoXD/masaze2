@@ -34,30 +34,65 @@ export const ADMIN_PASSWORD_HASH = 'OIHDAIUohDOIAUWD873827'; // In real app, nev
 export const SERVICES_LIST = [
   {
     id: 1,
-    title: "Relaxační masáž",
-    description: "Jemná masáž pro uvolnění stresu a napětí svalů.",
-    price: "1 200 Kč",
-    duration: "60 min"
+    title: "Obličej & hlava",
+    description: "Jemná a uvolňující masáž obličeje a hlavy pro dokonalou relaxaci.",
+    price: "600 Kč",
+    duration: "30 min"
   },
   {
     id: 2,
-    title: "Hloubková regenerační masáž",
-    description: "Intenzivnější techniky zaměřené na hluboké svalové vrstvy.",
-    price: "1 500 Kč",
-    duration: "60 min"
+    title: "Plosky nohou & peeling",
+    description: "Osvěžující péče o vaše chodidla spojená s jemným peelingem.",
+    price: "600 Kč",
+    duration: "30 min"
   },
   {
     id: 3,
-    title: "Masáž s aromaterapií",
-    description: "Kombinace masáže a éterických olejů pro harmonizaci těla i duše.",
-    price: "1 400 Kč",
+    title: "Lifting obličeje, Gua Sha",
+    description: "Omlazující masáž obličeje pomocí tradiční techniky Gua Sha pro prokrvení a vypnutí pleti.",
+    price: "900 Kč",
     duration: "60 min"
   },
   {
     id: 4,
-    title: "Konzultace celostního zdraví",
-    description: "Rozbor zdravotního stavu, doplňky MediHub a bylinná terapie.",
+    title: "Svalové uvolnění",
+    description: "Cílená masáž pro uvolnění ztuhlých svalů a odstranění napětí.",
+    price: "700 Kč",
+    duration: "30 min"
+  },
+  {
+    id: 5,
+    title: "Aroma relax hloubková",
+    description: "Hloubková relaxační masáž s využitím aromaterapie pro harmonizaci těla i duše.",
+    price: "1000 Kč / 1500 Kč",
+    duration: "60 min / 90 min"
+  },
+  {
+    id: 6,
+    title: "Maderoterapie",
+    description: "Masáž speciálními dřevěnými válečky pro odbourávání celulitidy a zpevnění těla.",
+    price: "900 Kč",
+    duration: "60 min"
+  },
+  {
+    id: 7,
+    title: "Dětská masáž",
+    description: "Jemná a uklidňující masáž přizpůsobená dětskému tělu.",
+    price: "400 Kč",
+    duration: "20 min"
+  },
+  {
+    id: 8,
+    title: "Teenage masáž",
+    description: "Masáž pro dospívající, pomáhá při růstových bolestech a stresu ze školy.",
+    price: "600 Kč",
+    duration: "40 min"
+  },
+  {
+    id: 9,
+    title: "Těhotenská masáž",
+    description: "Speciální jemná masáž pro nastávající maminky (od 4. měsíce těhotenství).",
     price: "800 Kč",
-    duration: "45 min"
+    duration: "40 min"
   }
 ];
