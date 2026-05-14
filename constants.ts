@@ -20,16 +20,17 @@ export const IMAGES = {
 export const CONTACT_INFO = {
   name: 'Tereza Rozkošná',
   ico: '02178265',
-  address: 'Vračkovice 3, 257 08 Načeradec', // Old address noted, but keeping per request
-  newAddress: 'Zámek Načeradec 1, 257 08', // From image text
+  address: 'Zámek Načeradec 1, 257 08 Načeradec',
+  subtitle: 'Mobilní masér pro firmy',
   phone: '739 303 702',
-  phoneClean: '420739303702', // For tel: links
+  phoneClean: '420739303702', // Pro tel: odkazy
   email: 'celkovezdravi@gmail.com',
   ig: 'Terez Rozkošná',
-  bankAccount: '', // To be filled
+  bankAccount: '1702434019/3030',
+  bankName: 'Air Bank',
+  iban: 'CZ15 3030 0000 0017 0243 4019',
+  swift: 'AIRA CZ PP',
 };
-
-export const ADMIN_PASSWORD_HASH = 'OIHDAIUohDOIAUWD873827'; // In real app, never store passwords client side
 
 export const SERVICES_LIST = [
   {
@@ -64,13 +65,20 @@ export const SERVICES_LIST = [
     id: 5,
     title: "Aroma relax hloubková",
     description: "Hloubková relaxační masáž s využitím aromaterapie pro harmonizaci těla i duše.",
-    price: "1000 Kč / 1500 Kč",
-    duration: "60 min / 90 min"
+    price: "1000 Kč",
+    duration: "60 min"
+  },
+  {
+    id: 51,
+    title: "Aroma relax hloubková",
+    description: "Hloubková relaxační masáž s využitím aromaterapie. Délka 90 min obsahuje navíc masáž hlavy a obličeje.",
+    price: "1500 Kč",
+    duration: "90 min"
   },
   {
     id: 6,
     title: "Maderoterapie",
-    description: "Masáž speciálními dřevěnými válečky pro odbourávání celulitidy a zpevnění těla.",
+    description: "Masáž stimulující lymfatický systém. Pomáhá tvarovat postavu, redukovat celulitidu pomocí speciálních technik a dřevěných nástrojů.",
     price: "900 Kč",
     duration: "60 min"
   },
@@ -84,7 +92,7 @@ export const SERVICES_LIST = [
   {
     id: 8,
     title: "Teenage masáž",
-    description: "Masáž pro dospívající, pomáhá při růstových bolestech a stresu ze školy.",
+    description: "Masáž pro dospívající, pomáhá při růstových bolestech a uvolnění od celkového stresu.",
     price: "600 Kč",
     duration: "40 min"
   },

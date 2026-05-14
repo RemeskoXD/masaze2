@@ -10,7 +10,7 @@ const Services: React.FC = () => {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gold/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gold/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -23,22 +23,32 @@ const Services: React.FC = () => {
             <span className="text-gold-dark uppercase tracking-[0.2em] text-xs font-semibold">Ceník & Služby</span>
             <div className="h-px w-8 bg-gold/50"></div>
           </div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-text-dark mb-6">Investice do vašeho zdraví</h2>
-          <p className="text-text-muted max-w-2xl mx-auto font-light text-lg">
-            Při pravidelné docházce lze individuálně domluvit cenu.
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-text-dark mb-8 leading-tight italic">
+            "Dopřejte si masáž, která uvolní vaše tělo i mysl a přinese vám skutečný pocit klidu."
+          </h2>
+          <p className="text-text-muted max-w-2xl mx-auto font-light text-lg mb-4">
+            Každá masáž je rituál. Cena odráží nejen čas, ale i kvalitu péče, energii a přírodní produkty nejvyšší kvality. Při pravidelné docházce (např. 5 návštěv) je možná individuální cena nebo bonus k proceduře.
           </p>
+          
+          <div className="inline-flex flex-col sm:flex-row items-center justify-center gap-3 bg-gold/5 border border-gold/20 px-6 py-4 rounded-2xl mx-auto mt-6">
+             <div className="flex bg-white p-2 rounded-full shadow-sm text-gold">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+             </div>
+             <p className="font-medium text-text-dark text-sm sm:text-base">
+               <span className="font-bold text-gold-dark uppercase tracking-wide mr-2">ZDARMA KE KAŽDÉ MASÁŽI:</span>
+               Relaxační balíček (aromaterapie + bylinný čaj)
+             </p>
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          {/* Service Cards Column */}
-          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
             {SERVICES_LIST.map((service, index) => (
               <motion.div 
                 key={service.id} 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.6, delay: index * 0.05 }}
                 className="group relative bg-white p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(197,168,128,0.12)] transition-all duration-500 border border-transparent hover:border-gold/20"
               >
                 <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-4 gap-2 sm:gap-4">
@@ -53,11 +63,11 @@ const Services: React.FC = () => {
                 
                 <div className="flex items-center text-text-muted text-xs uppercase tracking-[0.15em] mb-5 font-medium">
                     <Clock size={14} className="mr-2 text-gold" />
-                    {service.duration} čistého času
+                    {service.duration}
                 </div>
                 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <p className="text-text-muted leading-relaxed max-w-lg font-light">{service.description}</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+                    <p className="text-text-muted leading-relaxed max-w-md font-light">{service.description}</p>
                     <a href="#reservation" className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
                         Objednat
                     </a>
@@ -159,37 +169,9 @@ const Services: React.FC = () => {
               </div>
             </motion.div>
           </div>
-
-          {/* Side Image Column */}
-          <div className="lg:col-span-5 xl:col-span-4 hidden lg:block relative h-full min-h-[600px]">
-             <motion.div 
-               initial={{ opacity: 0, x: 30 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               transition={{ duration: 0.8 }}
-               className="sticky top-32"
-             >
-                <div className="relative rounded-t-[12rem] rounded-b-[3rem] overflow-hidden shadow-[0_20px_50px_rgb(0,0,0,0.1)] group">
-                  <img 
-                   src={IMAGES.massage1} 
-                   alt="Detail masáže" 
-                   className="w-full h-[850px] object-cover filter brightness-105 contrast-105 sepia-[0.05] group-hover:scale-105 transition duration-1000"
-                 />
-                 <div className="absolute inset-0 border-[1px] border-white/40 rounded-t-[12rem] rounded-b-[3rem] m-4 pointer-events-none"></div>
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80"></div>
-                 
-                 <div className="absolute bottom-0 left-0 right-0 p-10 text-center">
-                     <p className="text-white italic font-serif text-2xl leading-relaxed drop-shadow-lg">
-                       "Každá masáž je rituál. Cena odráží nejen čas, ale i kvalitu péče, energii a přírodní produkty nejvyšší kvality."
-                     </p>
-                 </div>
-                </div>
-             </motion.div>
-          </div>
         </div>
-      </div>
-    </section>
-  );
-};
-
-export default Services;
+      </section>
+    );
+  };
+  
+  export default Services;

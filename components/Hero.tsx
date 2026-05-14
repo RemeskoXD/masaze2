@@ -25,7 +25,7 @@ const Hero: React.FC = () => {
           className="mb-8 inline-block"
         >
             <span className="text-gold-dark tracking-[0.4em] uppercase text-xs md:text-sm border-b border-gold/50 pb-2">
-                Celostní přístup & Regenerace
+                Moje regenerace – návrat k sobě
             </span>
         </motion.div>
         
@@ -42,19 +42,23 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="font-serif text-2xl md:text-4xl text-text-muted font-light italic mb-10 max-w-3xl mx-auto leading-relaxed"
+          className="font-serif text-2xl md:text-3xl text-text-muted font-light italic mb-8 max-w-3xl mx-auto leading-relaxed"
         >
-          "Objevte sílu doteku, který léčí tělo, duši i mysl v srdci Načeradce."
+          "Objevte sílu zpomalení, uvolnění napětí a znovunalezení přirozené rovnováhy."
         </motion.p>
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-8 max-w-2xl mx-auto text-lg text-text-muted leading-relaxed font-sans font-light mb-12 tracking-wide"
+          className="mt-8 max-w-2xl mx-auto text-lg text-text-muted leading-relaxed font-sans font-light mb-12 tracking-wide space-y-4"
         >
           <p>
-            Věnuji se masážím s přesahem do celkového zdraví. Propojuji regenerační techniky s bylinnou terapií, doplňky MediHub a redoxními molekulami.
+            Propojuji vědomý dotek, sílu rostlin, medicinálních hub, redoxní technologie a celostní přístup, který jde do hloubky.
+          </p>
+          <p>
+            Nejde jen o masáž.<br />Je to prostor, kde můžete vypnout a znovu se nadechnout.<br />
+            <strong>Dopřejte si regeneraci, která má smysl.</strong>
           </p>
         </motion.div>
 

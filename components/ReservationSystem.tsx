@@ -1,22 +1,40 @@
 import React, { useState } from 'react';
 import { SERVICES_LIST, API_BASE_URL } from '../constants';
 import { ReservationStatus } from '../types';
-import { Calendar, Clock, User, CheckCircle, Loader2, AlertCircle, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, User, CheckCircle, Loader2, AlertCircle, Check, ArrowRight, ArrowLeft, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const getNextDays = (days: number) => {
-  const result = [];
-  const today = new Date();
-  for (let i = 0; i < days; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    result.push(d);
-  }
-  return result;
-};
+const generateTimeSlots = (serviceId: number | null) => {
+  if (!serviceId) return [];
+  const service = SERVICES_LIST.find(s => s.id === serviceId);
+  if (!service) return [];
 
-// V budoucnu: Načítat obsazené časy z API
-const timeSlots = ['09:00', '10:30', '13:00', '14:30', '16:00', '17:30'];
+  // Parse duration number (e.g. "60 min" -> 60)
+  const durationMatch = service.duration.match(/(\d+)/);
+  const duration = durationMatch ? parseInt(durationMatch[0]) : 60;
+
+  // Gap between massages based on duration
+  let gap = 0;
+  if (duration <= 30) gap = 15;
+  else if (duration === 60) gap = 30;
+  else gap = 30; // 90 min and more
+
+  const totalBlockMinutes = duration + gap;
+  const slots = [];
+  
+  let currentMinutes = 9 * 60; // Start at 09:00
+  const endMinutes = 19 * 60; // End at 19:00 (last slot finishes before OR starts at this time)
+  
+  // Create blocks that fit in the 9:00 - 19:00 window
+  while (currentMinutes + duration <= endMinutes) {
+      const h = Math.floor(currentMinutes / 60);
+      const m = currentMinutes % 60;
+      slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      currentMinutes += totalBlockMinutes;
+  }
+
+  return slots;
+};
 
 const ReservationSystem: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -33,7 +51,8 @@ const ReservationSystem: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const days = getNextDays(14); 
+  // Calendar State
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const handleServiceSelect = (id: number) => {
     setSelectedService(id);
@@ -50,21 +69,69 @@ const ReservationSystem: React.FC = () => {
     setTimeout(() => setStep(3), 300);
   };
 
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const prevMonth = () => {
+    const today = new Date();
+    if (currentMonth.getMonth() > today.getMonth() || currentMonth.getFullYear() > today.getFullYear()) {
+         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    }
+  };
+
+  // Calendar Generation
+  const generateCalendarDays = () => {
+       const year = currentMonth.getFullYear();
+       const month = currentMonth.getMonth();
+       const daysInMonth = new Date(year, month + 1, 0).getDate();
+       const firstDay = new Date(year, month, 1).getDay();
+       const startingDay = firstDay === 0 ? 6 : firstDay - 1; // Monday as 0
+
+       const days = [];
+       for (let i = 0; i < startingDay; i++) {
+         days.push(null);
+       }
+       for (let i = 1; i <= daysInMonth; i++) {
+         days.push(new Date(year, month, i));
+       }
+       return days;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg(null);
 
+    // Basic frontend validation
+    const phoneRegex = /^[+]?[0-9\s]{9,15}$/;
+    if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+        setErrorMsg("Zadejte prosím platné telefonní číslo.");
+        setIsSubmitting(false);
+        return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+        setErrorMsg("Zadejte prosím platnou e-mailovou adresu.");
+        setIsSubmitting(false);
+        return;
+    }
+
+    const sanitize = (str: string) => str.replace(/[<>]/g, '').trim();
+
     const reservationData = {
-        action: 'create_reservation',
         serviceId: selectedService,
         date: selectedDate,
         time: selectedTime,
-        ...formData
+        customerName: sanitize(formData.name),
+        email: sanitize(formData.email),
+        phone: sanitize(formData.phone),
+        note: sanitize(formData.note)
     };
 
     try {
-        const response = await fetch(API_BASE_URL, {
+        const response = await fetch('/api/reservation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reservationData)
@@ -72,7 +139,7 @@ const ReservationSystem: React.FC = () => {
 
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-           throw new Error("Server vrátil neočekávanou odpověď (ne JSON). Zkontrolujte api.php.");
+           throw new Error("Server vrátil neočekávanou odpověď");
         }
 
         const result = await response.json();
@@ -81,12 +148,12 @@ const ReservationSystem: React.FC = () => {
             setSubmitted(true);
         } else {
             console.error("API Error:", result);
-            setErrorMsg(result.message || "Nepodařilo se vytvořit rezervaci. Zkuste to prosím znovu.");
+            setErrorMsg(result.message || "Nepodařilo se vytvořit rezervaci.");
         }
 
     } catch (error) {
         console.error("Connection error:", error);
-        setErrorMsg("Nepodařilo se spojit se serverem. Zkontrolujte připojení k internetu.");
+        setErrorMsg("Nepodařilo se spojit se serverem.");
     } finally {
         setIsSubmitting(false);
     }
@@ -207,12 +274,21 @@ const ReservationSystem: React.FC = () => {
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                     >
-                        <h3 className="text-3xl text-text-dark font-serif mb-8">
-                            Zvolte proceduru
-                        </h3>
+                        <div className="flex justify-between items-end mb-8">
+                            <h3 className="text-3xl text-text-dark font-serif">
+                                Zvolte proceduru
+                            </h3>
+                            <div className="hidden sm:flex items-center gap-2 text-xs text-gold-dark font-medium bg-gold/5 px-3 py-1.5 rounded-full border border-gold/20">
+                                <Gift size={14} /> Bonus překvapení ke každé rezervaci
+                            </div>
+                        </div>
                         <div className="grid grid-cols-1 gap-4">
                             {SERVICES_LIST.map((service) => {
                                 const isSelected = selectedService === service.id;
+                                // Fake "original" price logic + 50 CZK
+                                const numericPriceMatch = service.price.match(/\d+/);
+                                const originalPrice = numericPriceMatch ? `${parseInt(numericPriceMatch[0]) + 50} Kč` : null;
+
                                 return (
                                 <button
                                     key={service.id}
@@ -223,16 +299,23 @@ const ReservationSystem: React.FC = () => {
                                         : 'border-gold/20 hover:border-gold/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
                                     }`}
                                 >
-                                    <div className="relative z-10">
+                                    <div className="relative z-10 w-2/3">
                                         <div className={`text-xl font-serif transition-colors duration-300 ${isSelected ? 'text-gold-dark' : 'text-text-dark group-hover:text-gold-dark'}`}>{service.title}</div>
                                         <div className="text-sm text-text-muted font-light mt-1 flex items-center gap-2">
                                             <Clock size={12} className={isSelected ? 'text-gold' : 'text-gold/60'} /> {service.duration}
                                         </div>
                                     </div>
-                                    <div className="relative z-10 flex items-center gap-4">
-                                        <span className={`font-medium text-lg ${isSelected ? 'text-gold-dark' : 'text-text-dark'}`}>{service.price}</span>
-                                        <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-gold bg-gold text-white' : 'border-gold/30 text-transparent group-hover:border-gold/60'}`}>
-                                            <Check size={12} />
+                                    <div className="relative z-10 flex flex-col items-end gap-1">
+                                        {originalPrice && (
+                                            <span className="text-xs text-text-muted/60 line-through font-mono">
+                                                {originalPrice}
+                                            </span>
+                                        )}
+                                        <div className="flex items-center gap-4">
+                                            <span className={`font-medium text-lg ${isSelected ? 'text-gold-dark' : 'text-text-dark'}`}>{service.price}</span>
+                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-gold bg-gold text-white' : 'border-gold/30 text-transparent group-hover:border-gold/60'}`}>
+                                                <Check size={12} />
+                                            </div>
                                         </div>
                                     </div>
                                     {/* Hover background effect */}
@@ -262,53 +345,60 @@ const ReservationSystem: React.FC = () => {
                         </div>
                         
                         <div className="mb-10">
-                            <h4 className="text-text-dark text-sm uppercase tracking-[0.15em] font-medium mb-4 flex items-center gap-2">
-                                <Calendar size={16} className="text-gold" /> Dostupné dny
-                            </h4>
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-text-dark text-sm uppercase tracking-[0.15em] font-medium flex items-center gap-2">
+                                    <Calendar size={16} className="text-gold" /> Kalendář
+                                </h4>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={prevMonth} className="p-1 hover:text-gold transition-colors text-text-muted">
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                    <span className="font-serif text-lg min-w-[120px] text-center text-text-dark">
+                                        {currentMonth.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}
+                                    </span>
+                                    <button onClick={nextMonth} className="p-1 hover:text-gold transition-colors text-text-muted">
+                                        <ChevronRight size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                            
                             <motion.div 
-                                className="flex overflow-x-auto pb-4 gap-3 scrollbar-thin"
-                                variants={{
-                                    hidden: { opacity: 0 },
-                                    show: {
-                                        opacity: 1,
-                                        transition: { staggerChildren: 0.05 }
-                                    }
-                                }}
-                                initial="hidden"
-                                animate="show"
+                                className="border border-gold/20 rounded-2xl p-4 bg-white/50"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                             >
-                                {days.map((day) => {
-                                const dateStr = day.toISOString().split('T')[0];
-                                const isSelected = selectedDate === dateStr;
-                                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                                return (
-                                    <motion.button
-                                        key={dateStr}
-                                        variants={{
-                                            hidden: { opacity: 0, x: 20 },
-                                            show: { opacity: 1, x: 0 }
-                                        }}
-                                        whileHover={!isWeekend ? { y: -2 } : {}}
-                                        whileTap={!isWeekend ? { scale: 0.95 } : {}}
-                                        disabled={isWeekend}
-                                        onClick={() => handleDateSelect(dateStr)}
-                                        className={`flex-shrink-0 w-24 p-4 rounded-2xl text-center border transition-all duration-300 ${
-                                            isSelected 
-                                                ? 'bg-gold border-gold text-white shadow-[0_10px_20px_rgba(197,168,128,0.3)]' 
-                                                : isWeekend 
-                                                    ? 'border-transparent text-text-muted/30 cursor-not-allowed bg-gray-50'
-                                                    : 'border-gold/20 bg-white text-text-dark hover:border-gold/60 hover:shadow-md'
-                                        }`}
-                                    >
-                                        <div className={`text-xs uppercase tracking-widest font-medium mb-2 ${isSelected ? 'text-white/90' : 'text-text-muted'}`}>
-                                            {day.toLocaleDateString('cs-CZ', { weekday: 'short' })}
-                                        </div>
-                                        <div className="text-2xl font-serif leading-none">
-                                            {day.getDate()}.{day.getMonth() + 1}.
-                                        </div>
-                                    </motion.button>
-                                );
-                                })}
+                                <div className="grid grid-cols-7 gap-1 text-center text-xs uppercase tracking-widest text-text-muted/60 mb-2 font-medium">
+                                    {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(d => <div key={d} className="py-2">{d}</div>)}
+                                </div>
+                                <div className="grid grid-cols-7 gap-1">
+                                    {generateCalendarDays().map((date, idx) => {
+                                        if (!date) return <div key={`empty-${idx}`} className="p-2"></div>;
+                                        const dateStr = date.toISOString().split('T')[0];
+                                        const isSelected = selectedDate === dateStr;
+                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                        // Simple past check (allowing today)
+                                        const todayStr = new Date().toISOString().split('T')[0];
+                                        const isPast = dateStr < todayStr;
+                                        const disabled = isWeekend || isPast;
+
+                                        return (
+                                            <button
+                                                key={dateStr}
+                                                disabled={disabled}
+                                                onClick={() => handleDateSelect(dateStr)}
+                                                className={`p-3 text-center rounded-xl font-serif text-lg transition-all duration-300 ${
+                                                    isSelected
+                                                    ? 'bg-gold text-white shadow-md'
+                                                    : disabled
+                                                        ? 'text-text-muted/30 cursor-not-allowed'
+                                                        : 'hover:bg-gold/10 text-text-dark'
+                                                }`}
+                                            >
+                                                {date.getDate()}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </motion.div>
                         </div>
 
@@ -325,7 +415,7 @@ const ReservationSystem: React.FC = () => {
                                         <Clock size={16} className="text-gold" /> Dostupné časy
                                     </h4>
                                     <motion.div 
-                                        className="grid grid-cols-3 sm:grid-cols-4 gap-4"
+                                        className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3"
                                         variants={{
                                             hidden: { opacity: 0 },
                                             show: {
@@ -336,7 +426,7 @@ const ReservationSystem: React.FC = () => {
                                         initial="hidden"
                                         animate="show"
                                     >
-                                        {timeSlots.map((time) => {
+                                        {generateTimeSlots(selectedService).map((time) => {
                                             const isSelected = selectedTime === time;
                                             return (
                                             <motion.button
@@ -348,7 +438,7 @@ const ReservationSystem: React.FC = () => {
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => handleTimeSelect(time)}
-                                                className={`py-3 rounded-full border transition-all duration-300 font-medium ${
+                                                className={`py-2 text-sm rounded-full border transition-all duration-300 font-medium ${
                                                     isSelected
                                                     ? 'bg-gold border-gold text-white shadow-md'
                                                     : 'border-gold/30 hover:border-gold text-text-dark hover:bg-gold/5'

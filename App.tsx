@@ -5,6 +5,7 @@ import Hero from './components/Hero';
 import About from './components/About';
 import Services from './components/Services';
 import ReservationSystem from './components/ReservationSystem';
+import GiftVouchers from './components/GiftVouchers';
 import Reviews from './components/Reviews';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
@@ -13,8 +14,8 @@ import { IMAGES } from './constants';
 
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [clientSectionEnabled, setClientSectionEnabled] = useState(false);
 
-  // Simple hash router for admin switching without reload
   useEffect(() => {
     const handleHashChange = () => {
       if (window.location.hash === '#admin') {
@@ -25,7 +26,17 @@ const App: React.FC = () => {
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Check on mount
+    handleHashChange(); 
+
+    // Fetch public settings
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+          if (data && data.clientSectionEnabled !== undefined) {
+              setClientSectionEnabled(data.clientSectionEnabled);
+          }
+      })
+      .catch(err => console.error("Could not load settings:", err));
 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
@@ -36,12 +47,11 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-beige-bg text-text-dark font-sans antialiased selection:bg-gold selection:text-white">
-      <Navigation />
+      <Navigation clientSectionEnabled={clientSectionEnabled} />
       <main>
         <Hero />
         <About />
         
-        {/* Gallery Strip */}
         <motion.div 
           initial="hidden"
           whileInView="show"
@@ -55,11 +65,6 @@ const App: React.FC = () => {
           }}
           className="grid grid-cols-2 md:grid-cols-4 gap-0 h-48 md:h-64"
         >
-           {/* 
-              Posunutí obrázků dolů (object-[50%_35%]): 
-              Obrázek se zarovná tak, že bod ve 35% jeho výšky (horní třetina) bude uprostřed.
-              Tím se obrázek vizuálně posune dolů a odhalí se horní část s rukama/masáží.
-           */}
            <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage2} alt="Atmosphere" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
            <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage4} alt="Candles" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
            <motion.img variants={{ hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 0.8, scale: 1 } }} whileHover={{ opacity: 1, scale: 1.05, zIndex: 10 }} src={IMAGES.massage5} alt="Oils" className="w-full h-full object-cover object-[50%_35%] transition-all duration-500 origin-center" />
@@ -68,6 +73,22 @@ const App: React.FC = () => {
 
         <Services />
         <ReservationSystem />
+        <GiftVouchers />
+        
+        {/* Placeholders pro e-shop a klientskou sekci */}
+        <section id="eshop" className="py-24 bg-beige-bg text-center border-t border-gold/10">
+          <h2 className="text-3xl font-serif text-text-dark mb-4">Medicinální houby a rostliny</h2>
+          <p className="text-text-muted">E-shop pro vás právě připravujeme. Již brzy zde najdete naši nabídku.</p>
+        </section>
+
+        {clientSectionEnabled && (
+        <section id="client-area" className="py-24 bg-white text-center border-t border-gold/10">
+          <h2 className="text-3xl font-serif text-text-dark mb-4">Klientská sekce</h2>
+          <p className="text-text-muted mb-8">Přihlášení do partnerského e-shopu (MediHub)</p>
+          <button className="bg-gold/50 cursor-not-allowed text-white px-8 py-3 rounded-full font-medium transition-colors">Připravujeme</button>
+        </section>
+        )}
+
         <Reviews />
       </main>
       <Footer />

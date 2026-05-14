@@ -18,23 +18,36 @@ const About: React.FC = () => {
             className="order-2 lg:order-1"
           >
             <h2 className="text-4xl md:text-5xl font-serif text-text-dark mb-8 leading-tight">
-              Proč si vybrat <br/><span className="text-gold-dark italic">právě mé masáže</span>
+              O mně
             </h2>
             
             <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light">
               <p>
-                Ve své praxi kombinuji masáže zaměřené na uvolnění, regeneraci a podporu samoléčby těla, doplňky MediHub, léčivé rostliny a redoxní molekuly.
+                Celý život mě přirozeně přitahuje to, co léčí – rostliny, houby, hudba i dotek. Nejen, že mě to baví, ale dává mi to hluboký smysl a vnitřní sílu.
               </p>
               
-              <div className="bg-white/50 border-l-2 border-gold/50 p-6 my-8">
-                <h3 className="font-serif text-xl text-gold-dark mb-2">Moje filozofie</h3>
-                <p className="italic text-text-dark">
-                  "Věřím, že tělo má obrovskou schopnost regenerace — když mu dáme správné podmínky."
-                </p>
-              </div>
+              <p>
+                Moje cesta začala nenápadně. Na zahradě u babičky, v jejím klidu a přirozeném přístupu k životu. Vedle toho jsem ale vnímala úplně jiný svět – stres, tlak ze školy, práce i okolí. A někde mezi tím jsem začala hledat rovnováhu.
+              </p>
 
               <p>
-                Masáž, výživa, rostliny a moderní buněčná podpora nejsou oddělené světy. Společně tvoří funkční celek, který může přinést dlouhodobé výsledky.
+                Silně se mi zapsaly i zkušenosti, kdy jsem doprovázela blízké k lékařům. Následně i mé přímé zkušenosti, kdy jsem potřebovala opravdovou pomoc a místo toho jsem viděla nezájem, spěch a pouhé řešení příznaků. Chyběl mi opravdový zájem o člověka jako celek – nejen o jeho tělo, ale i psychiku a myšlení, které ovládá většinu nemocí a bolestí.
+              </p>
+
+              <p>
+                Právě to mě přivedlo k hlubšímu hledání. Začala jsem studovat psychologii, fyziologii, léčivé rostliny i houby. Šla jsem si vlastní cestou, i když jsem kolem sebe často slyšela pochybnosti a nepochopení.
+              </p>
+
+              <p className="font-medium text-text-dark">
+                Nepřestala jsem. Dnes propojuji roky praxe i teorie do toho, co dělám.
+              </p>
+
+              <p>
+                U mě najdete nejen skutečně kvalitní masáž v krásném prostředí, ale i citlivý přístup k Vám a Vašemu zdraví.
+              </p>
+
+              <p className="italic text-gold-dark text-xl font-serif pt-4">
+                Těším se na setkání.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 pt-8 border-t border-gold/10">
@@ -42,7 +55,7 @@ const About: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">
                     <Leaf className="text-gold-dark" size={24} strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Léčivé rostliny</span>
+                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Léčivé rostliny & houby</span>
                 </div>
                 <div className="flex flex-col items-center text-center group">
                   <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">

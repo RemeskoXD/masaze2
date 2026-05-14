@@ -2,6 +2,7 @@ import React from 'react';
 import { CONTACT_INFO } from '../constants';
 import { Instagram, Mail, Phone, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
+import QRCode from 'react-qr-code';
 
 const Footer: React.FC = () => {
   return (
@@ -18,24 +19,26 @@ const Footer: React.FC = () => {
           >
             <h3 className="text-2xl font-serif text-gold-dark mb-6">Kontakt</h3>
             <div className="space-y-4 text-text-muted">
-              <p className="font-bold text-lg text-text-dark">{CONTACT_INFO.name}</p>
-              <div className="flex items-center gap-3">
-                <MapPin size={20} className="text-gold" />
+              <div>
+                 <p className="font-bold text-lg text-text-dark">{CONTACT_INFO.name}</p>
+                 <p className="text-gold-dark text-sm">{CONTACT_INFO.subtitle}</p>
+              </div>
+              <div className="flex items-start gap-3 pt-2">
+                <MapPin size={20} className="text-gold mt-1 shrink-0" />
                 <div>
-                  <p>{CONTACT_INFO.newAddress}</p>
-                  <p className="text-sm text-text-muted/70">(Původně: {CONTACT_INFO.address})</p>
+                  <p>{CONTACT_INFO.address}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 hover:text-gold transition">
-                <Phone size={20} className="text-gold" />
+                <Phone size={20} className="text-gold shrink-0" />
                 <a href={`tel:${CONTACT_INFO.phone}`}>{CONTACT_INFO.phone}</a>
               </div>
               <div className="flex items-center gap-3 hover:text-gold transition">
-                <Mail size={20} className="text-gold" />
+                <Mail size={20} className="text-gold shrink-0" />
                 <a href={`mailto:${CONTACT_INFO.email}`}>{CONTACT_INFO.email}</a>
               </div>
               <div className="flex items-center gap-3 hover:text-gold transition">
-                <Instagram size={20} className="text-gold" />
+                <Instagram size={20} className="text-gold shrink-0" />
                 <a href={`https://instagram.com/${CONTACT_INFO.ig}`} target="_blank" rel="noreferrer">@{CONTACT_INFO.ig}</a>
               </div>
               <p className="mt-4 text-sm text-text-muted/70">IČO: {CONTACT_INFO.ico}</p>
@@ -50,14 +53,21 @@ const Footer: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-center md:text-left"
           >
-             <h3 className="text-2xl font-serif text-gold-dark mb-6">Rychlé odkazy</h3>
-             <ul className="space-y-2 text-text-muted">
-                <li><a href="#home" className="hover:text-gold">Domů</a></li>
-                <li><a href="#services" className="hover:text-gold">Služby</a></li>
-                <li><a href="#reservation" className="hover:text-gold">Rezervace</a></li>
-                <li><a href="#" className="hover:text-gold">E-shop (MediHub)</a></li>
-                <li><a href="#" className="hover:text-gold">Blog (Připravujeme)</a></li>
-             </ul>
+             <h3 className="text-2xl font-serif text-gold-dark mb-6">Platební údaje</h3>
+             <div className="text-text-muted text-sm space-y-2">
+                <p>Platbu můžete provést online převodem:</p>
+                <div className="mt-3 p-4 bg-white/50 border border-gold/20 rounded-xl flex items-center gap-4">
+                  <div className="bg-white p-1.5 border border-gold/10 rounded overflow-hidden flex-shrink-0">
+                     <QRCode value={`SPD*1.0*ACC:${CONTACT_INFO.iban.replace(/\s/g, '')}*CC:CZK*MSG:Masaz`} size={80} level="L" />
+                  </div>
+                  <div className="font-mono text-xs space-y-1">
+                    <p className="font-sans font-medium text-text-dark mb-1">{CONTACT_INFO.bankName}</p>
+                    <p>Účet: <strong>{CONTACT_INFO.bankAccount}</strong></p>
+                    <p>IBAN: {CONTACT_INFO.iban}</p>
+                    <p>SWIFT: {CONTACT_INFO.swift}</p>
+                  </div>
+                </div>
+             </div>
           </motion.div>
 
           {/* Map Placeholder */}
