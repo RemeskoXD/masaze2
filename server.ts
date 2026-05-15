@@ -4,13 +4,9 @@ import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // --- Simple Local Database ---
 const DB_FILE = path.join(process.cwd(), 'db.json');
@@ -232,7 +228,7 @@ async function startServer() {
       const { status } = req.body; // 'confirmed', 'paid', 'cancelled'
       
       const db = await getDB();
-      const resIndex = db.reservations.findIndex((r: any) => r.id === parseInt(id));
+      const resIndex = db.reservations.findIndex((r: any) => r.id === parseInt(id as string));
       
       if (resIndex === -1) {
         return res.status(404).json({ success: false, message: 'Nenalezeno' });
@@ -294,7 +290,7 @@ async function startServer() {
     try {
       const { id } = req.params;
       const db = await getDB();
-      const reservation = db.reservations.find((r: any) => r.id === parseInt(id));
+      const reservation = db.reservations.find((r: any) => r.id === parseInt(id as string));
       
       if (!reservation) {
         return res.status(404).json({ success: false });

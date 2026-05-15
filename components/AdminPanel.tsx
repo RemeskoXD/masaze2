@@ -28,18 +28,24 @@ const AdminPanel: React.FC = () => {
             body: JSON.stringify({ password })
         });
         
-        const result = await response.json();
-        if (result.success) {
-            setAdminToken(result.token);
-            setIsAuthenticated(true);
-            fetchData(result.token);
-            fetchSettings();
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const result = await response.json();
+            if (result.success) {
+                setAdminToken(result.token);
+                setIsAuthenticated(true);
+                fetchData(result.token);
+                fetchSettings();
+            } else {
+                setLoginError("Nesprávné heslo");
+            }
         } else {
-            setLoginError("Nesprávné heslo");
+            console.error("API Error: Server nevrátil JSON. Status:", response.status);
+            setLoginError("Chyba připojení k serveru (API není dostupné). Pokud jste na Coolify, ujistěte se, že typ nasazení je 'Node.js' (Nixpacks/Dockerfile), nikoliv 'Static Site', a startovací příkaz je 'npm run start'. Jinak se spustí jen frontend bez backendu!");
         }
     } catch (error) {
         console.error("Login error:", error);
-        setLoginError("Chyba připojení k serveru.");
+        setLoginError("Chyba připojení k serveru (Síťová chyba nebo backend neběží).");
     } finally {
         setIsLoading(false);
     }
