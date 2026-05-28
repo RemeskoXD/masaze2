@@ -35,7 +35,7 @@ const Services: React.FC = () => {
                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
              </div>
              <p className="font-medium text-text-dark text-sm sm:text-base">
-               <span className="font-bold text-gold-dark uppercase tracking-wide mr-2">ZDARMA KE KAŽDÉ MASÁŽI:</span>
+               <span className="font-bold text-gold-dark uppercase tracking-wide mr-2">KE KAŽDÉ MASÁŽI NAVÍC:</span>
                Relaxační balíček (aromaterapie + bylinný čaj)
              </p>
           </div>
@@ -109,7 +109,7 @@ const Services: React.FC = () => {
                 <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
                   <Leaf className="text-gold-dark" size={20} strokeWidth={1.5} />
                 </div>
-                Léčivé byliny & medicinální houby
+                Přírodní byliny & medicinální houby
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
                 <div className="group">

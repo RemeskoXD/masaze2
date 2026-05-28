@@ -36,13 +36,13 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
       <nav 
         className={`mx-auto max-w-7xl rounded-full transition-all duration-500 pointer-events-auto ${
           scrolled 
-            ? 'bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gold/10 py-3 px-6' 
-            : 'bg-white/80 backdrop-blur-md border border-white/40 shadow-sm py-4 px-6'
+            ? 'bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gold/10 py-2.5 px-3.5 sm:px-6' 
+            : 'bg-white/80 backdrop-blur-md border border-white/40 shadow-sm py-3.5 px-3.5 sm:px-6'
         }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <a href="#home" className="font-serif text-xl md:text-2xl font-medium tracking-widest transition-colors duration-300 text-text-dark hover:text-gold-dark">
+          <div className="flex-shrink-0 max-w-[70%] sm:max-w-none">
+            <a href="#home" className="font-serif text-[15px] xs:text-base sm:text-lg md:text-2xl font-medium tracking-[0.08em] sm:tracking-widest transition-colors duration-300 text-text-dark hover:text-gold-dark block truncate sm:overflow-visible">
               TEREZA ROZKOŠNÁ
             </a>
           </div>

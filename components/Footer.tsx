@@ -21,7 +21,9 @@ const Footer: React.FC = () => {
             <div className="space-y-4 text-text-muted">
               <div>
                  <p className="font-bold text-lg text-text-dark">{CONTACT_INFO.name}</p>
-                 <p className="text-gold-dark text-sm">{CONTACT_INFO.subtitle}</p>
+                 {CONTACT_INFO.subtitle && (
+                    <p className="text-gold-dark text-sm">{CONTACT_INFO.subtitle}</p>
+                 )}
               </div>
               <div className="flex items-start gap-3 pt-2">
                 <MapPin size={20} className="text-gold mt-1 shrink-0" />
@@ -41,7 +43,10 @@ const Footer: React.FC = () => {
                 <Instagram size={20} className="text-gold shrink-0" />
                 <a href={`https://instagram.com/${CONTACT_INFO.ig}`} target="_blank" rel="noreferrer">@{CONTACT_INFO.ig}</a>
               </div>
-              <p className="mt-4 text-sm text-text-muted/70">IČO: {CONTACT_INFO.ico}</p>
+              <div className="mt-4 text-xs text-text-muted/70 leading-relaxed">
+                 <p>IČO: {CONTACT_INFO.ico}</p>
+                 <p className="italic text-[11px] mt-0.5">Fyzická osoba zapsaná v živnostenském rejstříku.</p>
+              </div>
             </div>
           </motion.div>
 
@@ -56,14 +61,14 @@ const Footer: React.FC = () => {
              <h3 className="text-2xl font-serif text-gold-dark mb-6">Platební údaje</h3>
              <div className="text-text-muted text-sm space-y-2">
                 <p>Platbu můžete provést online převodem:</p>
-                <div className="mt-3 p-4 bg-white/50 border border-gold/20 rounded-xl flex items-center gap-4">
+                <div className="mt-3 p-4 bg-white/50 border border-gold/20 rounded-xl flex flex-col xs:flex-row items-center gap-4 text-center xs:text-left">
                   <div className="bg-white p-1.5 border border-gold/10 rounded overflow-hidden flex-shrink-0">
                      <QRCode value={`SPD*1.0*ACC:${CONTACT_INFO.iban.replace(/\s/g, '')}*CC:CZK*MSG:Masaz`} size={80} level="L" />
                   </div>
-                  <div className="font-mono text-xs space-y-1">
+                  <div className="font-mono text-xs space-y-1 break-words w-full overflow-hidden">
                     <p className="font-sans font-medium text-text-dark mb-1">{CONTACT_INFO.bankName}</p>
-                    <p>Účet: <strong>{CONTACT_INFO.bankAccount}</strong></p>
-                    <p>IBAN: {CONTACT_INFO.iban}</p>
+                    <p>Účet: <strong className="break-all">{CONTACT_INFO.bankAccount}</strong></p>
+                    <p className="break-all">IBAN: {CONTACT_INFO.iban}</p>
                     <p>SWIFT: {CONTACT_INFO.swift}</p>
                   </div>
                 </div>

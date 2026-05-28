@@ -574,6 +574,9 @@ const ReservationSystem: React.FC = () => {
                                     )}
                                 </div>
                             </button>
+                            <p className="text-[11px] text-text-muted/60 text-center mt-4 font-light leading-relaxed">
+                                Odesláním rezervace berete na vědomí, že Vaše osobní údaje (jméno, e-mail, telefon) budou zpracovány v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 (GDPR) za účelem správy a potvrzení Vaší rezervace.
+                            </p>
                         </form>
                      </motion.div>
                 )}

@@ -21,7 +21,7 @@ export const CONTACT_INFO = {
   name: 'Tereza Rozkošná',
   ico: '02178265',
   address: 'Zámek Načeradec 1, 257 08 Načeradec',
-  subtitle: 'Mobilní masér pro firmy',
+  subtitle: '',
   phone: '739 303 702',
   phoneClean: '420739303702', // Pro tel: odkazy
   email: 'celkovezdravi@gmail.com',

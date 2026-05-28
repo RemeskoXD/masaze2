@@ -46,7 +46,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-beige-bg text-text-dark font-sans antialiased selection:bg-gold selection:text-white">
+    <div className="bg-beige-bg text-text-dark font-sans antialiased selection:bg-gold selection:text-white min-h-screen overflow-x-hidden relative">
       <Navigation clientSectionEnabled={clientSectionEnabled} />
       <main>
         <Hero />

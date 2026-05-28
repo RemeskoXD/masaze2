@@ -23,7 +23,7 @@ const About: React.FC = () => {
             
             <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light">
               <p>
-                Celý život mě přirozeně přitahuje to, co léčí – rostliny, houby, hudba i dotek. Nejen, že mě to baví, ale dává mi to hluboký smysl a vnitřní sílu.
+                Celý život mě přirozeně přitahuje to, co pomáhá – rostliny, houby, hudba i dotek. Nejen, že mě to baví, ale dává mi to hluboký smysl a vnitřní sílu.
               </p>
               
               <p>
@@ -35,7 +35,7 @@ const About: React.FC = () => {
               </p>
 
               <p>
-                Právě to mě přivedlo k hlubšímu hledání. Začala jsem studovat psychologii, fyziologii, léčivé rostliny i houby. Šla jsem si vlastní cestou, i když jsem kolem sebe často slyšela pochybnosti a nepochopení.
+                Právě to mě přivedlo k hlubšímu hledání. Začala jsem studovat psychologii, fyziologii, bylinkářství, medicinální houby a k mým základům patří také studium Tradiční čínské medicíny a dlouholetá praxe v muzikoterapii. Šla jsem si vlastní cestou, i když jsem kolem sebe často slyšela pochybnosti a nepochopení.
               </p>
 
               <p className="font-medium text-text-dark">
@@ -55,7 +55,7 @@ const About: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">
                     <Leaf className="text-gold-dark" size={24} strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Léčivé rostliny & houby</span>
+                  <span className="text-sm uppercase tracking-widest font-medium text-text-dark">Bylinná péče & houby</span>
                 </div>
                 <div className="flex flex-col items-center text-center group">
                   <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">

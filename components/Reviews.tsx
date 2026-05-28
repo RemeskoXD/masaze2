@@ -3,9 +3,10 @@ import { Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const MOCK_REVIEWS = [
-  { id: 1, author: 'Jana N.', rating: 5, text: 'Úžasný zážitek, Tereza má zlaté ruce. Odcházela jsem jako znovuzrozená.', date: '10. 1. 2024' },
-  { id: 2, author: 'Petr K.', rating: 5, text: 'Profesionální přístup a krásné prostředí. Doporučuji masáž s aromaterapií.', date: '5. 12. 2023' },
-  { id: 3, author: 'Lenka S.', rating: 5, text: 'Konečně někdo, kdo řeší problémy komplexně. Děkuji!', date: '20. 11. 2023' },
+  { id: 1, author: 'Jana', rating: 5, text: 'Masáže jsou skvělé, uvolňující, jak masáž těla, tak masáž hlavy a obličeje. Velice příjemná slečna masérka a krásné prostředí. Všem vřele doporučuji.', date: 'Ověřená recenze' },
+  { id: 2, author: 'Lukáš', rating: 5, text: 'MASÁŽ SKVĚLÁ, VÝBORNÁ, UVOLŇUJÍCÍ. SUPER RELAX A ODPOČINEK PO NÁROČNÉM DNI. ČLOVĚK ODCHÁZÍ PLN SKVĚLÉ ENERGIE.', date: 'Ověřená recenze' },
+  { id: 3, author: 'Jarek Pech', rating: 5, text: 'Vaše masáž je velmi uklidňující a energická... cítím se po masáži krásně a uvolněně... moc děkuji ♡', date: 'Ověřená recenze' },
+  { id: 4, author: 'Slávka', rating: 5, text: 'Masáže byly super, velice spokojena.', date: 'Ověřená recenze' },
 ];
 
 const Reviews: React.FC = () => {
@@ -88,7 +89,7 @@ const Reviews: React.FC = () => {
         </AnimatePresence>
 
         {/* Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {MOCK_REVIEWS.map((review, index) => (
                 <motion.div 
                   key={review.id} 

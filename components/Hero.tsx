@@ -22,10 +22,10 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-8 inline-block"
+          className="mb-8 inline-block select-none"
         >
-            <span className="text-gold-dark tracking-[0.4em] uppercase text-xs md:text-sm border-b border-gold/50 pb-2">
-                Moje regenerace – návrat k sobě
+            <span className="text-gold-dark tracking-[0.25em] sm:tracking-[0.38em] uppercase text-xs md:text-sm font-semibold border-b-2 border-gold/40 pb-2.5">
+                Péče o tělo i duši
             </span>
         </motion.div>
         
@@ -33,10 +33,19 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="font-serif text-6xl md:text-8xl lg:text-9xl text-text-dark mb-6 tracking-widest leading-[0.9] drop-shadow-sm font-light"
+          className="font-serif text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-text-dark mb-4 tracking-[0.06em] sm:tracking-widest leading-[1.05] sm:leading-[0.95] drop-shadow-md font-medium uppercase"
         >
-          TEREZA<br/><span className="text-gradient-gold italic pr-4">ROZKOŠNÁ</span>
+          MOJE<br/><span className="text-gradient-gold italic pr-2 sm:pr-4 font-semibold">REGENERACE</span>
         </motion.h1>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.55 }}
+          className="mb-12 text-gold-dark tracking-[0.3em] sm:tracking-[0.45em] uppercase text-sm md:text-xl font-semibold select-none drop-shadow-sm"
+        >
+          NÁVRAT K SOBĚ
+        </motion.div>
         
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
