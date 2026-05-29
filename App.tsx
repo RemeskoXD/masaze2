@@ -17,6 +17,12 @@ const App: React.FC = () => {
   const [clientSectionEnabled, setClientSectionEnabled] = useState(false);
 
   useEffect(() => {
+    // If the page is loaded/reloaded with #admin, silently clean the hash
+    // to prevent unwanted redirects to admin panel on rebuilds/reloads.
+    if (window.location.hash === '#admin') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
     const handleHashChange = () => {
       if (window.location.hash === '#admin') {
         setIsAdmin(true);
@@ -26,7 +32,8 @@ const App: React.FC = () => {
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); 
+    // On fresh mount/rebuild, we do not call handleHashChange() automatically if they had `#admin`
+    // so they stay on the beautiful homepage. They can access admin anytime by clicking the link.
 
     // Fetch public settings
     fetch('/api/settings')

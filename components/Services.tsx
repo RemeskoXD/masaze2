@@ -114,21 +114,21 @@ const Services: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
                 <div className="group">
                   <h4 className="font-sans font-medium text-gold-dark mb-3 text-sm uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Varianta 1
+                    <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Bylinné dávkování
                   </h4>
-                  <p className="text-sm text-text-muted font-light leading-relaxed">Natrhám si sama/sám a chci doporučené dávkování na míru.</p>
+                  <p className="text-sm text-text-muted font-light leading-relaxed">Chcete si byliny natrhat sami? Pomohu vám bezpečně nastavit dávkování bylin a silných medicinálních hub přesně na míru vašemu tělu.</p>
                 </div>
                 <div className="group">
                   <h4 className="font-sans font-medium text-gold-dark mb-3 text-sm uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Varianta 2
+                    <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Integrace doplňků
                   </h4>
-                  <p className="text-sm text-text-muted font-light leading-relaxed">Varianta 1 + chci upravit celkově doplňky stravy, aby to dávalo smysl.</p>
+                  <p className="text-sm text-text-muted font-light leading-relaxed">Předchozí bylinné poradenství rozšíříme o celkovou revizi vašich stávajících doplňků stravy, abychom odstranili duplicity a vše dávalo smysl.</p>
                 </div>
                 <div className="group">
                   <h4 className="font-sans font-medium text-gold-dark mb-3 text-sm uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Varianta 3
+                    <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Celostní průvodce
                   </h4>
-                  <p className="text-sm text-text-muted font-light leading-relaxed">Varianta 1+2 + celkové poradenství zdravého životního stylu a cvičení ve formě vychytávek, které nejsou nuda.</p>
+                  <p className="text-sm text-text-muted font-light leading-relaxed">Kompletní balíček bylin a doplňků spojený s poradenstvím pro zdravý životní styl a cvičením formou hravých, efektivních vychytávek, které vás budou bavit.</p>
                 </div>
               </div>
             </motion.div>

@@ -199,7 +199,11 @@ const AdminPanel: React.FC = () => {
                 <button onClick={() => fetchData()} className="p-2 bg-[#0a2f1c] rounded-full hover:bg-gold hover:text-deep-green transition" title="Obnovit data">
                     <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
                 </button>
-                <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-2 text-red-400 hover:text-red-300 transition">
+                <button onClick={() => {
+                  setIsAuthenticated(false);
+                  window.location.hash = '';
+                  window.location.href = '/';
+                }} className="flex items-center gap-2 text-red-400 hover:text-red-300 transition">
                     <LogOut size={18} /> Odhlásit
                 </button>
             </div>

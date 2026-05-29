@@ -126,8 +126,12 @@ async function startServer() {
       };
 
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-        await transporter.sendMail(adminMailOptions);
-        await transporter.sendMail(customerMailOptions);
+        try {
+          await transporter.sendMail(adminMailOptions);
+          await transporter.sendMail(customerMailOptions);
+        } catch (mailError) {
+          console.error('Nepodařilo se odeslat e-maily pro rezervaci (zkontrolujte SMTP konfiguraci):', mailError);
+        }
       }
 
       res.status(200).json({ success: true, message: 'Rezervace přijata' });
@@ -185,8 +189,12 @@ async function startServer() {
       };
 
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-        await transporter.sendMail(customerMailOptions);
-        await transporter.sendMail(adminMailOptions);
+        try {
+          await transporter.sendMail(customerMailOptions);
+          await transporter.sendMail(adminMailOptions);
+        } catch (mailError) {
+          console.error('Nepodařilo se odeslat e-maily pro dárkový poukaz (zkontrolujte SMTP konfiguraci):', mailError);
+        }
       }
 
       res.status(200).json({ success: true, message: 'Objednávka poukazu odeslána' });
@@ -269,12 +277,16 @@ async function startServer() {
         }
 
         if (subject && htmlBody) {
-           await transporter.sendMail({
-              from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
-              to: reservation.email,
-              subject,
-              html: htmlBody
-           });
+           try {
+              await transporter.sendMail({
+                 from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
+                 to: reservation.email,
+                 subject,
+                 html: htmlBody
+              });
+           } catch (mailError) {
+              console.error('Nepodařilo se odeslat stavový e-mail (zkontrolujte SMTP konfiguraci):', mailError);
+           }
         }
       }
 
@@ -297,19 +309,23 @@ async function startServer() {
       }
 
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-        await transporter.sendMail({
-            from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
-            to: reservation.email,
-            subject: 'Poděkování za návštěvu masáže',
-            html: `
-              <h3>Dobrý den, ${reservation.customerName},</h3>
-              <p>ještě jednou moc děkuji za Vaši dnešní návštěvu. Doufám, že se po masáži cítíte uvolněně a zregenerovaně.</p>
-              <p>Nezapomeňte dnes pít více vody, aby se podpořilo vyplavování toxinů a dozněly uvolňující účinky masáže.</p>
-              <p>Kdykoliv budete potřebovat znovu zrelaxovat, ráda Vás opět uvidím.</p>
-              <p>Mějte krásný zbytek dne.</p>
-              <p>S úctou,<br>Tereza Rozkošná</p>
-            `
-        });
+        try {
+          await transporter.sendMail({
+              from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
+              to: reservation.email,
+              subject: 'Poděkování za návštěvu masáže',
+              html: `
+                <h3>Dobrý den, ${reservation.customerName},</h3>
+                <p>ještě jednou moc děkuji za Vaši dnešní návštěvu. Doufám, že se po masáži cítíte uvolněně a zregenerovaně.</p>
+                <p>Nezapomeňte dnes pít více vody, aby se podpořilo vyplavování toxinů a dozněly uvolňující účinky masáže.</p>
+                <p>Kdykoliv budete potřebovat znovu zrelaxovat, ráda Vás opět uvidím.</p>
+                <p>Mějte krásný zbytek dne.</p>
+                <p>S úctou,<br>Tereza Rozkošná</p>
+              `
+          });
+        } catch (mailError) {
+          console.error('Nepodařilo se odeslat poděkování (zkontrolujte SMTP konfiguraci):', mailError);
+        }
       }
 
       res.json({ success: true, message: 'Poděkování odesláno' });
