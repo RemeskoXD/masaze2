@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SERVICES_LIST } from '../constants';
 import { ReservationStatus, Service } from '../types';
-import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail } from 'lucide-react';
+import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const AdminPanel: React.FC = () => {
@@ -11,10 +11,22 @@ const AdminPanel: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   
   const [reservations, setReservations] = useState<any[]>([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
   const [services, setServices] = useState<Service[]>(SERVICES_LIST); 
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reservations' | 'settings' | 'prices'>('reservations');
+  const [activeTab, setActiveTab] = useState<'reservations' | 'settings' | 'prices' | 'vouchers'>('reservations');
   const [clientSectionEnabled, setClientSectionEnabled] = useState(false);
+
+  // States for cancellation dialog
+  const [cancelModalReservation, setCancelModalReservation] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelAlternativeTermin, setCancelAlternativeTermin] = useState('');
+
+  const handleOpenCancelModal = (resObj: any) => {
+    setCancelModalReservation(resObj);
+    setCancelReason('');
+    setCancelAlternativeTermin('');
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +101,16 @@ const AdminPanel: React.FC = () => {
                 setReservations(resData.reservations);
             }
         }
+
+        const vouchResp = await fetch('/api/admin/vouchers', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (vouchResp.ok) {
+            const vouchData = await vouchResp.json();
+            if (vouchData.success) {
+                setVouchers(vouchData.vouchers || []);
+            }
+        }
     } catch (e) {
         console.error("Failed to fetch data", e);
     } finally {
@@ -96,12 +118,37 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const updateStatus = async (id: number, status: string) => {
+  const updateStatus = async (id: number, status: string, reason?: string, alternativeTermin?: string) => {
     const previousReservations = [...reservations];
-    setReservations(reservations.map(res => res.id === id ? { ...res, status } : res));
+    setReservations(reservations.map(res => res.id === id ? { ...res, status, cancelReason: reason, alternativeTermin } : res));
 
     try {
         const response = await fetch(`/api/admin/reservation/${id}/status`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({ status, reason, alternativeTermin })
+        });
+        
+        if (!response.ok) throw new Error("Server error");
+        alert(status === 'cancelled' 
+            ? 'Rezervace byla úspěšně zrušena a klientovi byl odeslán e-mail.'
+            : 'Stav byl úspěšně upraven a e-mail byl odeslán.');
+        fetchData(adminToken);
+    } catch (e) {
+        alert("Chyba při ukládání stavu na server.");
+        setReservations(previousReservations); 
+    }
+  };
+
+  const updateVoucherStatus = async (id: number, status: string) => {
+    const previousVouchers = [...vouchers];
+    setVouchers(vouchers.map(v => v.id === id ? { ...v, status } : v));
+
+    try {
+        const response = await fetch(`/api/admin/voucher/${id}/status`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -111,10 +158,17 @@ const AdminPanel: React.FC = () => {
         });
         
         if (!response.ok) throw new Error("Server error");
-        alert('Stav upraven a e-mail byl odeslán (pokud byl nastaven).');
+        const data = await response.json();
+        
+        if (status === 'paid') {
+            alert(`Platba poukazu byla ověřena. Kód poukazu '${data.voucherCode}' byl úspěšně vygenerován a odeslán e-mailem.`);
+        } else {
+            alert(`Poukaz byl označen jako zrušený.`);
+        }
+        fetchData(adminToken);
     } catch (e) {
-        alert("Chyba při ukládání stavu na server.");
-        setReservations(previousReservations); 
+        alert("Chyba při ukládání stavu poukazu.");
+        setVouchers(previousVouchers); 
     }
   };
 
@@ -219,6 +273,12 @@ const AdminPanel: React.FC = () => {
                 <Calendar size={18} /> Přehled Rezervací
             </button>
             <button 
+                onClick={() => setActiveTab('vouchers')}
+                className={`px-6 py-3 rounded-md flex items-center gap-2 transition shadow-lg ${activeTab === 'vouchers' ? 'bg-gold text-deep-green font-bold transform scale-105' : 'bg-[#0f3d26] text-gray-300 hover:bg-white/10'}`}
+            >
+                <Gift size={18} /> Dárkové poukazy
+            </button>
+            <button 
                 onClick={() => setActiveTab('prices')}
                 className={`px-6 py-3 rounded-md flex items-center gap-2 transition shadow-lg ${activeTab === 'prices' ? 'bg-gold text-deep-green font-bold transform scale-105' : 'bg-[#0f3d26] text-gray-300 hover:bg-white/10'}`}
             >
@@ -307,13 +367,13 @@ const AdminPanel: React.FC = () => {
                                           {res.status === 'pending' && (
                                               <div className="flex gap-2">
                                                   <button onClick={() => updateStatus(res.id, 'confirmed')} className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded shadow-sm transition flex-1 text-center text-xs" title="Potvrdit termín (pošle instrukce)">Potvrdit (e-mail)</button>
-                                                  <button onClick={() => updateStatus(res.id, 'cancelled')} className="bg-red-600 hover:bg-red-500 text-white p-2 rounded shadow-sm transition" title="Zamítnout"><X size={16}/></button>
+                                                  <button onClick={() => handleOpenCancelModal(res)} className="bg-red-600 hover:bg-red-500 text-white p-2 rounded shadow-sm transition" title="Zamítnout"><X size={16}/></button>
                                               </div>
                                           )}
                                           {res.status === 'confirmed' && (
                                               <div className="flex gap-2">
                                                   <button onClick={() => updateStatus(res.id, 'paid')} className="bg-green-600 hover:bg-green-500 text-white p-2 rounded shadow-sm transition flex-1 text-center text-xs" title="Označit jako zaplaceno (pošle potvrzení)">Zaplaceno (e-mail)</button>
-                                                  <button onClick={() => updateStatus(res.id, 'cancelled')} className="text-red-400 hover:text-red-300 text-xs underline p-2">Zrušit</button>
+                                                  <button onClick={() => handleOpenCancelModal(res)} className="text-red-400 hover:text-red-300 text-xs underline p-2">Zrušit</button>
                                               </div>
                                           )}
                                           
@@ -323,6 +383,136 @@ const AdminPanel: React.FC = () => {
                                           >
                                             <Mail size={12} /> Poslat poděkování po masáži
                                           </button>
+                                      </td>
+                                  </motion.tr>
+                              ))}
+                          </motion.tbody>
+                      </table>
+                      )}
+                  </div>
+               </motion.div>
+          )}
+
+          {activeTab === 'vouchers' && (
+               <motion.div 
+                  key="vouchers"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-[#0f3d26] rounded-lg border border-gold/10 overflow-hidden shadow-xl"
+               >
+                  <div className="p-4 bg-[#0a2f1c] border-b border-gold/10 flex justify-between items-center">
+                      <h3 className="text-white font-serif text-lg">Žádosti o Dárkové Poukazy</h3>
+                      <span className="text-sm text-gray-400">Celkem: {vouchers.length}</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                      {vouchers.length === 0 ? (
+                          <div className="p-8 text-center text-gray-500">
+                              {isLoading ? 'Načítám data...' : 'Žádné poukazy v databázi.'}
+                          </div>
+                      ) : (
+                      <table className="w-full text-left border-collapse">
+                          <thead className="bg-[#0a2f1c] text-gold uppercase text-sm tracking-wider">
+                              <tr>
+                                  <th className="p-4 border-b border-gold/10">Datum</th>
+                                  <th className="p-4 border-b border-gold/10">Dárce (Odesílatel)</th>
+                                  <th className="p-4 border-b border-gold/10">Obdarovaný (Pro)</th>
+                                  <th className="p-4 border-b border-gold/10">Typ & Částka</th>
+                                  <th className="p-4 border-b border-gold/10">Jedinečný Kód</th>
+                                  <th className="p-4 border-b border-gold/10">Stav</th>
+                                  <th className="p-4 border-b border-gold/10">Akce</th>
+                              </tr>
+                          </thead>
+                          <motion.tbody 
+                              className="divide-y divide-gray-700"
+                              variants={{
+                                  hidden: { opacity: 0 },
+                                  show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+                              }}
+                              initial="hidden"
+                              animate="show"
+                          >
+                              {vouchers.map(vouch => (
+                                  <motion.tr 
+                                      key={vouch.id} 
+                                      className="hover:bg-white/5 transition-colors"
+                                      variants={{
+                                          hidden: { opacity: 0, x: -20 },
+                                          show: { opacity: 1, x: 0 }
+                                      }}
+                                  >
+                                      <td className="p-4 whitespace-nowrap">
+                                          <div className="font-bold text-white">{new Date(vouch.createdAt || vouch.id).toLocaleDateString('cs-CZ')}</div>
+                                          <div className="text-xs text-gray-400">{new Date(vouch.createdAt || vouch.id).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'})}</div>
+                                      </td>
+                                      <td className="p-4">
+                                          <div className="font-medium text-white">{vouch.senderName}</div>
+                                          <div className="text-xs text-gray-400">{vouch.email}</div>
+                                      </td>
+                                      <td className="p-4">
+                                          <div className="font-medium text-white">{vouch.recipientName}</div>
+                                          {vouch.note && <div className="text-xs text-gold/75 italic mt-1 font-serif">"{vouch.note}"</div>}
+                                      </td>
+                                      <td className="p-4">
+                                          <div className="font-medium text-white">{vouch.summary}</div>
+                                          <div className="text-xs text-gray-400">{vouch.amount} Kč</div>
+                                      </td>
+                                      <td className="p-4">
+                                          {vouch.voucherCode ? (
+                                              <span className="font-mono text-gold bg-black/30 px-2 py-1 rounded text-sm tracking-wider font-bold">{vouch.voucherCode}</span>
+                                          ) : (
+                                              <span className="text-gray-500 font-sans italic text-xs">&mdash;</span>
+                                          )}
+                                      </td>
+                                      <td className="p-4">
+                                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                              vouch.status === 'paid' ? 'bg-green-900 text-green-200 border border-green-700' :
+                                              vouch.status === 'cancelled' ? 'bg-red-900 text-red-200 border border-red-700' :
+                                              'bg-yellow-900 text-yellow-200 border border-yellow-700'
+                                          }`}>
+                                              {vouch.status === 'pending' ? 'Čeká na zaplacení' : vouch.status === 'paid' ? 'Zaplaceno & Odesláno' : 'Zrušeno'}
+                                          </span>
+                                      </td>
+                                      <td className="p-4">
+                                          {vouch.status === 'pending' && (
+                                              <div className="flex gap-2">
+                                                  <button 
+                                                      onClick={() => {
+                                                          if (confirm(`Opravdu si přejete potvrdit přijetí platby za poukaz pro '${vouch.recipientName}'? Tímto krokem bude vygenerován unikátní kód poukazu a odeslán dárci na e-mail: ${vouch.email}.`)) {
+                                                              updateVoucherStatus(vouch.id, 'paid');
+                                                          }
+                                                      }} 
+                                                      className="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded shadow-sm transition text-xs font-bold"
+                                                      title="Potvrdit platbu (vygeneruje kód a odesílá dárkový poukaz s unikátním číslem)"
+                                                  >
+                                                      Schválit & Odeslat poukaz
+                                                  </button>
+                                                  <button 
+                                                      onClick={() => {
+                                                          if (confirm(`Opravdu chcete stornovat/zrušit tuto objednávku poukazu?`)) {
+                                                              updateVoucherStatus(vouch.id, 'cancelled');
+                                                          }
+                                                      }} 
+                                                      className="bg-red-600 hover:bg-red-550 border border-red-700/50 text-white p-2 rounded shadow-sm transition text-xs" 
+                                                      title="Stornovat objednávku"
+                                                  >
+                                                      <X size={14}/>
+                                                  </button>
+                                              </div>
+                                          )}
+                                          {vouch.status === 'paid' && (
+                                              <button 
+                                                  onClick={() => {
+                                                      if (confirm(`Opravdu chcete stornovat tento již schválený dárkový poukaz?`)) {
+                                                          updateVoucherStatus(vouch.id, 'cancelled');
+                                                      }
+                                                  }}
+                                                  className="text-red-400 hover:text-red-300 text-xs underline"
+                                              >
+                                                  Stornovat poukaz
+                                              </button>
+                                          )}
                                       </td>
                                   </motion.tr>
                               ))}
@@ -449,6 +639,87 @@ const AdminPanel: React.FC = () => {
                        </div>
                   </div>
               </motion.div>
+          )}
+
+          {cancelModalReservation && (
+            <motion.div
+              key="cancel-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 15 }}
+                className="bg-[#0f4d30] border border-gold/40 rounded-xl max-w-md w-full p-6 shadow-2xl relative"
+              >
+                <button
+                  type="button"
+                  onClick={() => setCancelModalReservation(null)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
+                >
+                  <X size={20} />
+                </button>
+                
+                <h4 className="text-xl text-white font-serif mb-3 flex items-center gap-2">
+                  <X className="text-red-500" size={24} /> Zrušit rezervaci
+                </h4>
+                
+                <p className="text-sm text-gray-200 mb-4 pb-2 border-b border-white/10">
+                  Zákazník: <strong className="text-gold">{cancelModalReservation.customerName}</strong><br />
+                  Termín: <strong className="text-white">{new Date(cancelModalReservation.date).toLocaleDateString('cs-CZ')} v {cancelModalReservation.time}</strong>
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gold uppercase tracking-wider mb-1">
+                      Důvod zrušení (bude odeslán v e-mailu)
+                    </label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Uveďte důvod zrušení (např. Naléhavá zdravotní indispozice...)"
+                      className="w-full bg-[#072415] border border-gray-600 rounded p-2 text-white text-sm focus:border-gold outline-none h-24 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gold uppercase tracking-wider mb-1">
+                      Navrhnout náhradní termín (volitelné)
+                    </label>
+                    <input
+                      type="text"
+                      value={cancelAlternativeTermin}
+                      onChange={(e) => setCancelAlternativeTermin(e.target.value)}
+                      placeholder="Např. Středa 10. 6. v 15:30 nebo Čtvrtek v 10:00"
+                      className="w-full bg-[#072415] border border-gray-600 rounded p-2 text-white text-sm focus:border-gold outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setCancelModalReservation(null)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded py-2 text-sm transition"
+                  >
+                    Storno
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateStatus(cancelModalReservation.id, 'cancelled', cancelReason, cancelAlternativeTermin);
+                      setCancelModalReservation(null);
+                    }}
+                    className="flex-1 bg-red-600 hover:bg-red-500 text-white rounded py-2 text-sm font-semibold transition"
+                  >
+                    Potvrdit zrušení
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

@@ -26,10 +26,10 @@ export const CONTACT_INFO = {
   phoneClean: '420739303702', // Pro tel: odkazy
   email: 'celkovezdravi@gmail.com',
   ig: 'Terez Rozkošná',
-  bankAccount: '1702434019/3030',
+  bankAccount: '3190751019/3030',
   bankName: 'Air Bank',
-  iban: 'CZ15 3030 0000 0017 0243 4019',
-  swift: 'AIRA CZ PP',
+  iban: 'CZ03 3030 0000 0031 9075 1019',
+  swift: 'AIRACZPP',
 };
 
 export const SERVICES_LIST = [
@@ -102,5 +102,19 @@ export const SERVICES_LIST = [
     description: "Speciální jemná masáž pro nastávající maminky (od 4. měsíce těhotenství).",
     price: "800 Kč",
     duration: "40 min"
+  },
+  {
+    id: 10,
+    title: "Maderoterapie & Gua Sha (Okamžitá LEHKOST těla i tváře)",
+    description: "Okamžitá LEHKOST těla i tváře. Silná kombinace maderoterapie a masáže Gua Sha, která nastartuje tělo i pleť: viditelné tvarování, lifting, aktivace lymfy, odvod přebytečné vody, ruční lymfomodeling, masáž dřevěnými prvky a jadeitovými destičkami pro štíhlejší kontury a redukci otoků.",
+    price: "1700 Kč",
+    duration: "120 min"
+  },
+  {
+    id: 11,
+    title: "Rozjasňující rituál pro unavenou tvář a mysl",
+    description: "Reset, který uvidíš i ucítíš. Dopřej si péči, která tě zastaví a zároveň rozzáří: šetrné odlíčení, výživná pleťová maska, ruční masáž obličeje a hlavy pro uvolnění od stresu a masáž jadeitovými destičkami pro redukci otoků a svěží vzhled. Pleť je pak viditelně jasnější, hladší a odpočatá.",
+    price: "1200 Kč",
+    duration: "60 min"
   }
 ];

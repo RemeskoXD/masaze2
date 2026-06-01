@@ -1,6 +1,6 @@
 import React from 'react';
 import { SERVICES_LIST, IMAGES } from '../constants';
-import { Clock, Star, Info, AlertTriangle, Leaf } from 'lucide-react';
+import { Clock, Star, Info, AlertTriangle, Leaf, Sparkles, Gift, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Services: React.FC = () => {
@@ -36,7 +36,7 @@ const Services: React.FC = () => {
              </div>
              <p className="font-medium text-text-dark text-sm sm:text-base">
                <span className="font-bold text-gold-dark uppercase tracking-wide mr-2">KE KAŽDÉ MASÁŽI NAVÍC:</span>
-               Relaxační balíček (aromaterapie + bylinný čaj)
+               Aromaterapie & lahodný bylinný čaj
              </p>
           </div>
         </motion.div>
@@ -74,6 +74,135 @@ const Services: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+
+            {/* Speciální hýčkající balíčky */}
+            <div className="mt-16 mb-12">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="h-px w-6 bg-gold/40"></div>
+                <h3 className="text-2xl md:text-3xl font-serif text-gold-dark text-center italic">Zvýhodněné rituální balíčky</h3>
+                <div className="h-px w-6 bg-gold/40"></div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Balíček 1 */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6 }}
+                  className="group relative bg-white p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(197,168,128,0.15)] transition-all duration-500 border border-transparent hover:border-gold/30 flex flex-col justify-between"
+                >
+                  <div className="absolute top-4 right-4 text-gold/20 group-hover:text-gold/40 transition-colors duration-300">
+                    <Sparkles size={28} />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-start gap-4 mb-3">
+                      <h4 className="text-xl md:text-2xl font-serif text-text-dark group-hover:text-gold-dark transition-colors duration-300 leading-tight">
+                        Okamžitá LEHKOST těla i tváře
+                      </h4>
+                      <div className="text-right">
+                        <span className="text-xl font-semibold text-gold-dark font-sans block whitespace-nowrap">
+                          1700 Kč
+                        </span>
+                        <span className="text-xs text-text-muted font-sans flex items-center justify-end gap-1 mt-1">
+                          <Clock size={12} /> 120 min
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs uppercase tracking-wider text-gold-dark font-semibold mb-4">Maderoterapie & Gua Sha</p>
+                    <p className="text-sm text-text-muted font-light mb-6">Silná kombinace rituálů, která nastartuje celé tělo i obličej:</p>
+                    
+                    <ul className="space-y-3.5 mb-8">
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Viditelné tvarování a lifting pleti už po první návštěvě</span>
+                      </li>
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Hluboká aktivace lymfy a odvod přebytečné vody z těla</span>
+                      </li>
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Ruční lymfomodeling a masáž dřevěnými prvky pro štíhlejší kontury</span>
+                      </li>
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Obličejová masáž jadeitovými destičkami pro zmírnění otoků a rozzáření</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gold/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <p className="text-xs text-gold-dark italic font-medium leading-tight max-w-[200px]">
+                      Výsledek? Lehčí tělo, pevnější kontury a dokonale rozzářená tvář.
+                    </p>
+                    <a href="#reservation" className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-gold text-white text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold-dark transition-all rounded-full">
+                      Objednat rituál
+                    </a>
+                  </div>
+                </motion.div>
+
+                {/* Balíček 2 */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="group relative bg-white p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(197,168,128,0.15)] transition-all duration-500 border border-transparent hover:border-gold/30 flex flex-col justify-between"
+                >
+                  <div className="absolute top-4 right-4 text-gold/20 group-hover:text-gold/40 transition-colors duration-300">
+                    <Gift size={28} />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-start gap-4 mb-3">
+                      <h4 className="text-xl md:text-2xl font-serif text-text-dark group-hover:text-gold-dark transition-colors duration-300 leading-tight">
+                        Rozjasňující rituál pro tvář a mysl
+                      </h4>
+                      <div className="text-right">
+                        <span className="text-xl font-semibold text-gold-dark font-sans block whitespace-nowrap">
+                          1200 Kč
+                        </span>
+                        <span className="text-xs text-text-muted font-sans flex items-center justify-end gap-1 mt-1">
+                          <Clock size={12} /> 60 min
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs uppercase tracking-wider text-gold-dark font-semibold mb-4">Hlava & Obličej</p>
+                    <p className="text-sm text-text-muted font-light mb-6">Reset, který uvidíte i ucítíte. Dopřejte si hýčkání, které vás zastaví v čase:</p>
+                    
+                    <ul className="space-y-3.5 mb-8">
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Šetrné povrchové odlíčení pleti pro dokonalou čistotu (mimo řasy)</span>
+                      </li>
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Výživná a revitalizující pleťová maska pro hloubkovou péči</span>
+                      </li>
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Jemná ruční masáž obličeje a hlavy pro zklidnění drah a uvolnění</span>
+                      </li>
+                      <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
+                        <span className="p-0.5 rounded-full bg-gold/10 text-gold-dark mt-0.5"><Check size={12} /></span>
+                        <span>Závěrečná masáž jadeitovými destičkami pro odtok otoků a odpočatý vzhled</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gold/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <p className="text-xs text-gold-dark italic font-medium leading-tight max-w-[200px]">
+                      Výsledek? Viditelně jasnější, sametově vyhlazená a hluboce zregenerovaná pleť.
+                    </p>
+                    <a href="#reservation" className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-gold text-white text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold-dark transition-all rounded-full">
+                      Objednat rituál
+                    </a>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
 
             {/* Mobilní masérka Info */}
             <motion.div 
