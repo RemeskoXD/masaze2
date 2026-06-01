@@ -42,7 +42,7 @@ const Services: React.FC = () => {
         </motion.div>
 
         <div className="flex flex-col gap-6">
-            {SERVICES_LIST.map((service, index) => (
+            {SERVICES_LIST.filter(s => s.id !== 10 && s.id !== 11).map((service, index) => (
               <motion.div 
                 key={service.id} 
                 initial={{ opacity: 0, y: 20 }}

@@ -23,7 +23,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
     { name: 'Služby a Ceník', href: '#services' },
     { name: 'Rezervace', href: '#reservation' },
     { name: 'Recenze', href: '#reviews' },
-    { name: 'E-shop (Houby)', href: '#eshop', isExternal: false },
+    { name: 'E-shop', href: '#eshop', isExternal: false },
   ];
 
   return (
@@ -34,7 +34,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
       className="fixed top-0 w-full z-50 px-4 sm:px-6 lg:px-8 pt-6 pointer-events-none"
     >
       <nav 
-        className={`mx-auto max-w-7xl rounded-full transition-all duration-500 pointer-events-auto ${
+        className={`mx-auto max-w-7xl rounded-2xl lg:rounded-full transition-all duration-500 pointer-events-auto ${
           scrolled 
             ? 'bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gold/10 py-2.5 px-3.5 sm:px-6' 
             : 'bg-white/80 backdrop-blur-md border border-white/40 shadow-sm py-3.5 px-3.5 sm:px-6'
@@ -78,7 +78,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
           <div className="-mr-2 flex lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-full focus:outline-none transition-colors text-text-dark hover:text-gold-dark bg-white/50"
+              className="inline-flex items-center justify-center p-2 rounded-xl focus:outline-none transition-colors text-text-dark hover:text-gold-dark bg-white/50"
             >
               {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
