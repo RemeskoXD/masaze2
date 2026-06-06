@@ -136,7 +136,7 @@ async function startServer() {
 
   app.post('/api/reservation', async (req, res) => {
     try {
-      const { serviceId, date, time, customerName, phone, email, note } = req.body;
+      const { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs } = req.body;
 
       if (!serviceId || !date || !time || !customerName || !phone || !email) {
         return res.status(400).json({ success: false, message: 'Chybí povinné údaje' });
@@ -152,6 +152,8 @@ async function startServer() {
         phone,
         email,
         note,
+        totalPrice,
+        vs,
         status: 'pending', // 'pending' | 'confirmed' | 'paid' | 'cancelled'
         createdAt: new Date().toISOString()
       };
@@ -176,6 +178,26 @@ async function startServer() {
       };
 
       // 2. Zpráva pro zákazníka - Jen informace o přijetí bez příliš slibů
+      let qrCodeHtml = '';
+      if (totalPrice && surnameClean && vs) {
+        const qrMsg = removeDiacritics(`Masaze ${surnameClean}`.slice(0, 60));
+        const qrData = `SPD*1.0*ACC:${IBAN}*AM:${totalPrice}.00*CC:CZK*X-VS:${vs}*MSG:${qrMsg}`.toUpperCase();
+        const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
+        qrCodeHtml = `
+          <div style="margin: 25px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; max-width: 400px; font-family: sans-serif;">
+            <h4 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #1e293b; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Platba převodem</h4>
+            <div style="margin-bottom: 15px;">
+              <p style="margin: 0 0 5px 0; font-size: 24px; font-family: 'Georgia', serif; color: #1e293b;">${totalPrice} Kč</p>
+              <p style="margin: 0; font-size: 14px; color: #64748b;">Číslo účtu: <strong>${BANK_ACCOUNT}</strong> (${BANK_NAME})</p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #64748b;">Variabilní symbol: <strong>${vs}</strong></p>
+            </div>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Naskenujte kód ve Vaší mobilní bankovní aplikaci pro okamžité vyplnění platebních údajů.</p>
+            <img src="${qrImageUrl}" alt="QR Platba" width="160" height="160" style="display: block; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; background-color: white; margin-bottom: 8px;" />
+            <p style="font-size: 12px; color: #94a3b8; font-style: italic; margin: 0;">Při platbě přes QR kód se údaje vyplní automaticky.</p>
+          </div>
+        `;
+      }
+
       const customerMailOptions = {
         from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
         to: email,
@@ -183,8 +205,9 @@ async function startServer() {
         html: `
           <h3>Dobrý den, ${customerName},</h3>
           <p>Děkuji Vám za zájem. Vaše žádost o rezervaci byla úspěšně přijata.</p>
-          <p>Zatím se jedná pouze o požadavek. <strong>Termín Vám ještě závazně potvrdím v dalším e-mailu.</strong></p>
+          <p>Zatím se jedná pouze o požadavek. <strong>Termín Vám ještě závazně potvrdím v dalším e-mailu.</strong> <br/><span style="font-size: 12px; color: #666;">(Zkontrolujte si prosím i složku Hromadné nebo SPAM)</span></p>
           <p><strong>Zvolený termín:</strong> ${date} v ${time}</p>
+          ${qrCodeHtml}
           <p>V případě potřeby mě neváhejte kontaktovat na telefonu: <strong>${PHONE_NUMBER}</strong>.</p>
           <hr />
           <p>S pozdravem,</p>
@@ -337,6 +360,61 @@ async function startServer() {
     } catch (error) {
       console.error(error);
       res.status(500).json({ success: false, message: 'Chyba serveru při načítání poukazů' });
+    }
+  });
+
+  app.post('/api/admin/reservation/:id/reschedule', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { newDate, newTime } = req.body;
+      const db = await getDB();
+      const reservation = db.reservations.find((r: any) => r.id === parseInt(id as string));
+      
+      if (!reservation) {
+        return res.status(404).json({ success: false, message: 'Rezervace nenalezena' });
+      }
+
+      const oldDate = reservation.date;
+      const oldTime = reservation.time;
+
+      reservation.date = newDate;
+      reservation.time = newTime;
+      
+      // Optionally change status back to pending or keep it as is, or confirmed. Let's keep status.
+      // Usually reschedule implies it's confirmed or pending, let's keep current status.
+      
+      await saveDB(db);
+
+      // Email to the user about new term
+      let htmlBody = `
+        <h3>Dobrý den, ${reservation.customerName},</h3>
+        <p>Váš termín rezervace masáže byl <strong>změněn z důvodu naší předchozí domluvy nebo organizačních důvodů</strong>.</p>
+        <p>Váš nový závazný termín je:</p>
+        <p style="font-size: 16px; font-weight: bold; color: #0f5132; background-color: #d1e7dd; padding: 12px 18px; border-radius: 8px; display: inline-block; border: 1px solid #badbcc; font-family: sans-serif; margin: 10px 0;">
+          ${newDate} v ${newTime}
+        </p>
+        <p>Původní termín (${oldDate} v ${oldTime}) byl zrušen.</p>
+        <p>Pokud by Vám tento nový termín nevyhovoval, ihned mě prosím informujte odpovědí na tento e-mail nebo telefonicky na čísle <strong>${PHONE_NUMBER}</strong>.</p>
+        <p>Těším se na Vás,<br>Tereza Rozkošná</p>
+      `;
+
+      if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        try {
+          await transporter.sendMail({
+              from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
+              to: reservation.email,
+              subject: 'Změna termínu Vaší masáže',
+              html: htmlBody
+          });
+        } catch (mailError) {
+          console.error('Nepodařilo se odeslat e-mail po změně termínu:', mailError);
+        }
+      }
+
+      res.json({ success: true, message: 'Termín úspěšně změněn.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Chyba serveru' });
     }
   });
 
@@ -517,11 +595,11 @@ async function startServer() {
         if (status === 'confirmed') {
           subject = 'Závazné potvrzení Vaší rezervace a instrukce';
           const sDetails = getServiceDetails(reservation.serviceId);
-          const amount = sDetails.price;
+          const amount = reservation.totalPrice || sDetails.price;
           let qrCodeHtml = '';
           if (amount > 0) {
-            const qrMsg = removeDiacritics(`Rezervace ${reservation.customerName}`.slice(0, 60));
-            const qrData = `SPD*1.0*ACC:${IBAN}*AM:${amount}.00*CC:CZK*MSG:${qrMsg}`;
+            const qrMsg = removeDiacritics(`Rezervace ${reservation.surnameClean || reservation.customerName}`).slice(0, 60);
+            const qrData = `SPD*1.0*ACC:${IBAN}*AM:${amount}.00*CC:CZK${reservation.vs ? `*X-VS:${reservation.vs}` : ''}*MSG:${qrMsg}`.toUpperCase();
             const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
             qrCodeHtml = `
               <div style="margin: 25px 0; padding: 15px; border: 1px solid #e0eae0; border-radius: 12px; background-color: #f7f9f7; max-width: 400px; font-family: sans-serif;">
@@ -530,10 +608,12 @@ async function startServer() {
                   <li><strong>Banka:</strong> ${BANK_NAME}</li>
                   <li><strong>Číslo účtu:</strong> ${BANK_ACCOUNT}</li>
                   <li><strong>Částka:</strong> ${amount} Kč</li>
-                  <li><strong>Zpráva pro příjemce:</strong> Rezervace ${reservation.customerName}</li>
+                  ${reservation.vs ? `<li><strong>Variabilní symbol:</strong> ${reservation.vs}</li>` : ''}
+                  <li><strong>Zpráva pro příjemce:</strong> Rezervace ${reservation.surnameClean || reservation.customerName}</li>
                 </ul>
                 <p style="font-size: 13px; color: #4a5d4a; margin-bottom: 12px;">Nebo naskenujte QR kód pro rychlou platbu:</p>
                 <img src="${qrImageUrl}" alt="QR Platba" width="180" height="180" style="display: block; border: 1px solid #cbd5cb; border-radius: 6px; padding: 4px; background-color: white;" />
+                <p style="font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 8px;">Při platbě přes QR kód se údaje vyplní automaticky.</p>
               </div>
             `;
           }

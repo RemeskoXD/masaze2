@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SERVICES_LIST } from '../constants';
 import { ReservationStatus, Service } from '../types';
-import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift } from 'lucide-react';
+import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const AdminPanel: React.FC = () => {
@@ -16,11 +16,232 @@ const AdminPanel: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'reservations' | 'settings' | 'prices' | 'vouchers'>('reservations');
   const [clientSectionEnabled, setClientSectionEnabled] = useState(false);
+  const [openingHours, setOpeningHours] = useState<any>({
+    'Pondělí': { start: '09:00', end: '18:00' },
+    'Úterý': { start: '09:00', end: '18:00' },
+    'Středa': { start: '09:00', end: '18:00' },
+    'Čtvrtek': { start: '09:00', end: '18:00' },
+    'Pátek': { start: '09:00', end: '18:00' },
+    'Sobota': { start: '09:00', end: '18:00' },
+    'Neděle': { start: '09:00', end: '18:00' }
+  });
+
+  // Pagination for reservations
+  const [resPage, setResPage] = useState(1);
+  const resItemsPerPage = 10;
+  const resTotalPages = Math.ceil(reservations.length / resItemsPerPage);
+  const paginatedReservations = reservations.slice((resPage - 1) * resItemsPerPage, resPage * resItemsPerPage);
 
   // States for cancellation dialog
   const [cancelModalReservation, setCancelModalReservation] = useState<any | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelAlternativeTermin, setCancelAlternativeTermin] = useState('');
+
+  // States for thank you dialog
+  const [thankYouModalReservation, setThankYouModalReservation] = useState<any | null>(null);
+
+  // States for reschedule dialog
+  const [rescheduleModalReservation, setRescheduleModalReservation] = useState<any | null>(null);
+  const [rescheduleMonth, setRescheduleMonth] = useState(new Date());
+  const [rescheduleDate, setRescheduleDate] = useState<string | null>(null);
+  const [rescheduleTime, setRescheduleTime] = useState<string | null>(null);
+
+  // Calendar logic directly replicated for admin selection
+  const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = null) => {
+    if (!serviceId) return [];
+    const service = SERVICES_LIST.find(s => s.id === serviceId);
+    if (!service) return [];
+    
+    let duration = 60;
+    const mMatch = service.duration.match(/(\d+)/);
+    if (mMatch) duration = parseInt(mMatch[0]);
+
+    selectedAddons.forEach(addonId => {
+      const addon = SERVICES_LIST.find(s => s.id === addonId);
+      if (addon) {
+          const am = addon.duration.match(/(\d+)/);
+          if (am) duration += parseInt(am[0]);
+      }
+    });
+
+    let dayOfWeek = 'Pondělí';
+    if (dateStr) {
+      const d = new Date(dateStr);
+      dayOfWeek = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'][d.getDay()];
+    }
+
+    const daySettings = openingHours[dayOfWeek];
+    if (!daySettings || !daySettings.start || !daySettings.end) return []; // ZAVRENO
+
+    const startParts = daySettings.start.split(':');
+    const endParts = daySettings.end.split(':');
+    
+    let startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    let endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+
+    let gap = duration <= 30 ? 15 : 30;
+    const totalBlockMinutes = duration + gap;
+    const slots = [];
+    
+    let currentMinutes = startMinutes;
+    
+    while (currentMinutes + duration <= endMinutes) {
+        const h = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+        const m = (currentMinutes % 60).toString().padStart(2, '0');
+        slots.push(`${h}:${m}`);
+        currentMinutes += totalBlockMinutes;
+    }
+    return slots;
+  };
+
+  const generateCalendarDays = (monthDate: Date) => {
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay();
+    const startingDay = firstDay === 0 ? 6 : firstDay - 1; // Monday as 0
+
+    const days = [];
+    for (let i = 0; i < startingDay; i++) {
+        days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const openRescheduleModal = (resObj: any) => {
+      setRescheduleModalReservation(resObj);
+      setRescheduleDate(null);
+      setRescheduleTime(null);
+      setRescheduleMonth(new Date());
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleModalReservation || !rescheduleDate || !rescheduleTime) return;
+    setIsLoading(true);
+    
+    // Formatting date to DD.MM.YYYY
+    const dObj = new Date(rescheduleDate);
+    const formattedDate = `${dObj.getDate()}.${dObj.getMonth() + 1}.${dObj.getFullYear()}`;
+
+    try {
+        const response = await fetch(`/api/admin/reservation/${rescheduleModalReservation.id}/reschedule`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({ newDate: formattedDate, newTime: rescheduleTime })
+        });
+        if (response.ok) {
+            setReservations(reservations.map(res => res.id === rescheduleModalReservation.id ? { ...res, date: formattedDate, time: rescheduleTime } : res));
+            setRescheduleModalReservation(null);
+        } else {
+            alert('Chyba při změně termínu.');
+        }
+    } catch (e) {
+        alert('Server error při změně termínu.');
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  // Reusable Calendar Component for both Modals
+  const AdminCalendar = ({ 
+      selectedServiceId, 
+      addons, 
+      onSelectDateTime 
+  }: { 
+      selectedServiceId: number, 
+      addons?: number[], 
+      onSelectDateTime: (d: string, t: string) => void 
+  }) => {
+      const [calMonth, setCalMonth] = useState(new Date());
+      const [selDate, setSelDate] = useState<string | null>(null);
+      const [selTime, setSelTime] = useState<string | null>(null);
+
+      const days = generateCalendarDays(calMonth);
+      const slots = generateTimeSlots(selectedServiceId, addons || [], selDate);
+
+      const nextMonth = () => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1));
+      const prevMonth = () => {
+          const today = new Date();
+          if (calMonth.getMonth() > today.getMonth() || calMonth.getFullYear() > today.getFullYear()) {
+              setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1));
+          }
+      };
+
+      const handleTimePick = (t: string) => {
+          setSelTime(t);
+          if (selDate) onSelectDateTime(selDate, t);
+      };
+
+      return (
+          <div className="bg-[#072415] border border-gold/20 rounded p-4 mt-4">
+              <div className="flex justify-between items-center mb-4 text-gold shrink-0">
+                  <button onClick={prevMonth} type="button" className="p-1 hover:text-white"><Calendar size={16} /></button>
+                  <span className="font-bold">{calMonth.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}</span>
+                  <button onClick={nextMonth} type="button" className="p-1 hover:text-white"><Calendar size={16} /></button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-2">
+                  {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(d => <div key={d}>{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                  {days.map((date, idx) => {
+                      if (!date) return <div key={idx} className="p-1"></div>;
+                      const dateStr = date.toISOString().split('T')[0];
+                      const isSelected = selDate === dateStr;
+                      const isPast = date < new Date() && date.toDateString() !== new Date().toDateString();
+                      
+                      return (
+                          <button
+                              key={dateStr}
+                              type="button"
+                              onClick={() => { setSelDate(dateStr); setSelTime(null); }}
+                              disabled={isPast}
+                              className={`p-2 text-center rounded text-sm transition-all ${
+                                  isSelected ? 'bg-gold text-deep-green font-bold' : isPast ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gold/20 text-white'
+                              }`}
+                          >
+                              {date.getDate()}
+                          </button>
+                      );
+                  })}
+              </div>
+              
+              {selDate && (
+                  <div className="mt-4 pt-4 border-t border-gold/20">
+                      <h4 className="text-sm text-gold mb-2">Vybrat čas:</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                          {slots.map(t => {
+                              // is taken?
+                              // Formatoed date check
+                              const dO = new Date(selDate);
+                              const fDate = `${dO.getDate()}.${dO.getMonth() + 1}.${dO.getFullYear()}`;
+                              const isTaken = reservations.some(r => r.date === fDate && r.time === t && r.status !== 'cancelled');
+
+                              return (
+                                  <button
+                                      key={t}
+                                      type="button"
+                                      disabled={isTaken}
+                                      onClick={() => handleTimePick(t)}
+                                      className={`py-1 text-xs rounded transition-all ${
+                                          selTime === t ? 'bg-white text-deep-green font-bold' : isTaken ? 'opacity-20 line-through cursor-not-allowed' : 'bg-[#1a4a33] hover:bg-gold text-white hover:text-deep-green border border-gold/30'
+                                      }`}
+                                  >
+                                      {t}
+                                  </button>
+                              );
+                          })}
+                      </div>
+                  </div>
+              )}
+          </div>
+      );
+  };
 
   const handleOpenCancelModal = (resObj: any) => {
     setCancelModalReservation(resObj);
@@ -68,6 +289,7 @@ const AdminPanel: React.FC = () => {
           const res = await fetch('/api/settings');
           const data = await res.json();
           setClientSectionEnabled(data.clientSectionEnabled || false);
+          if (data.openingHours) setOpeningHours(data.openingHours);
       } catch (e) {
           console.error(e);
       }
@@ -87,6 +309,15 @@ const AdminPanel: React.FC = () => {
       } catch (e) {
           console.error(e);
       }
+  };
+
+  const updateOpeningHours = (day: string, type: 'start' | 'end', val: string) => {
+      const newHours = {
+          ...openingHours,
+          [day]: { ...openingHours[day], [type]: val }
+      };
+      setOpeningHours(newHours);
+      updateSetting('openingHours', newHours);
   };
 
   const fetchData = async (token: string = adminToken) => {
@@ -172,20 +403,24 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const sendThankYouEmail = async (id: number) => {
-    if (!confirm('Opravdu chcete ručně odeslat e-mail s poděkováním tomuto klientovi?')) return;
+  const confirmSendThankYouEmail = async () => {
+    if (!thankYouModalReservation) return;
+    setIsLoading(true);
     try {
-        const response = await fetch(`/api/admin/reservation/${id}/thankyou`, {
+        const response = await fetch(`/api/admin/reservation/${thankYouModalReservation.id}/thankyou`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         if (response.ok) {
             alert('E-mail s poděkováním byl úspěšně odeslán.');
+            setThankYouModalReservation(null);
         } else {
             alert('Nastala chyba při odesílání.');
         }
     } catch (e) {
          alert('Nastala chyba při odesílání (Server error).');
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -317,7 +552,7 @@ const AdminPanel: React.FC = () => {
                               <tr>
                                   <th className="p-4 border-b border-gold/10">Datum & Čas</th>
                                   <th className="p-4 border-b border-gold/10">Klient</th>
-                                  <th className="p-4 border-b border-gold/10">Poznámka</th>
+                                  <th className="p-4 border-b border-gold/10 min-w-[250px]">Objednávka & Cena</th>
                                   <th className="p-4 border-b border-gold/10">Stav</th>
                                   <th className="p-4 border-b border-gold/10 max-w-[200px]">Akce</th>
                               </tr>
@@ -331,7 +566,7 @@ const AdminPanel: React.FC = () => {
                               initial="hidden"
                               animate="show"
                           >
-                              {reservations.map(res => (
+                              {paginatedReservations.map(res => (
                                   <motion.tr 
                                       key={res.id} 
                                       className="hover:bg-white/5 transition-colors"
@@ -343,15 +578,26 @@ const AdminPanel: React.FC = () => {
                                       <td className="p-4 whitespace-nowrap">
                                           <div className="font-bold text-white">{new Date(res.date).toLocaleDateString('cs-CZ')}</div>
                                           <div className="text-sm text-gray-400 flex items-center gap-1"><Clock size={12}/> {res.time}</div>
-                                          <div className="text-xs text-gold/70 mt-1">{res.serviceId}</div>
                                       </td>
                                       <td className="p-4">
                                           <div className="font-medium text-white">{res.customerName}</div>
                                           <div className="text-xs text-gray-400">{res.phone}</div>
                                           <div className="text-xs text-gray-500">{res.email}</div>
                                       </td>
-                                      <td className="p-4 text-xs text-gray-500 italic max-w-xs truncate" title={res.note}>
-                                          {res.note || '-'}
+                                      <td className="p-4 text-xs">
+                                          <div className="font-bold text-gold text-sm mb-1">
+                                              {(() => {
+                                                  const s = SERVICES_LIST.find(s => s.id === res.serviceId);
+                                                  return s ? `${s.title} (${s.duration})` : res.serviceId;
+                                              })()}
+                                          </div>
+                                          <div className="text-gray-400 whitespace-pre-wrap mt-2">{res.note || '-'}</div>
+                                          {(res.totalPrice || res.vs) && (
+                                              <div className="mt-3 text-gold/80 bg-gold/10 inline-flex flex-wrap items-center gap-3 px-2 py-1 rounded">
+                                                  {res.totalPrice && <span className="font-medium text-gold">{res.totalPrice} Kč</span>}
+                                                  {res.vs && <span>VS: {res.vs}</span>}
+                                              </div>
+                                          )}
                                       </td>
                                       <td className="p-4">
                                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -377,8 +623,17 @@ const AdminPanel: React.FC = () => {
                                               </div>
                                           )}
                                           
+                                          {(res.status === 'pending' || res.status === 'confirmed') && (
+                                              <button 
+                                                onClick={() => openRescheduleModal(res)} 
+                                                className="w-full text-xs mt-1 bg-yellow-600/20 hover:bg-yellow-600 border border-yellow-600/50 text-yellow-500 hover:text-white px-2 py-1 rounded transition flex items-center justify-center gap-1"
+                                              >
+                                                <Calendar size={12} /> Změnit termín
+                                              </button>
+                                          )}
+
                                           <button 
-                                            onClick={() => sendThankYouEmail(res.id)} 
+                                            onClick={() => setThankYouModalReservation(res)} 
                                             className="w-full text-xs mt-1 bg-[#1a4a33] hover:bg-gold hover:text-deep-green border border-gold/30 text-white px-2 py-1 rounded transition flex items-center justify-center gap-1"
                                           >
                                             <Mail size={12} /> Poslat poděkování po masáži
@@ -388,6 +643,43 @@ const AdminPanel: React.FC = () => {
                               ))}
                           </motion.tbody>
                       </table>
+                      )}
+
+                      {resTotalPages > 1 && (
+                          <div className="flex justify-between items-center bg-[#0a2f1c] p-4 border-t border-gold/10">
+                              <span className="text-sm text-gray-400">
+                                  Zobrazeno {(resPage - 1) * resItemsPerPage + 1} až {Math.min(resPage * resItemsPerPage, reservations.length)} z {reservations.length} rezervací
+                              </span>
+                              <div className="flex gap-2">
+                                  <button
+                                      disabled={resPage === 1}
+                                      onClick={() => setResPage(Math.max(1, resPage - 1))}
+                                      className="p-2 rounded bg-gray-800 text-white hover:bg-gold hover:text-deep-green disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                  >
+                                      <ChevronLeft size={16} />
+                                  </button>
+                                  <div className="flex gap-1 items-center px-2">
+                                      {Array.from({ length: resTotalPages }).map((_, i) => (
+                                          <button
+                                              key={i}
+                                              onClick={() => setResPage(i + 1)}
+                                              className={`w-8 h-8 rounded text-sm transition-colors ${
+                                                  resPage === i + 1 ? 'bg-gold text-deep-green font-bold' : 'bg-transparent text-gray-400 hover:text-white'
+                                              }`}
+                                          >
+                                              {i + 1}
+                                          </button>
+                                      ))}
+                                  </div>
+                                  <button
+                                      disabled={resPage === resTotalPages}
+                                      onClick={() => setResPage(Math.min(resTotalPages, resPage + 1))}
+                                      className="p-2 rounded bg-gray-800 text-white hover:bg-gold hover:text-deep-green disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                  >
+                                      <ChevronRight size={16} />
+                                  </button>
+                              </div>
+                          </div>
                       )}
                   </div>
                </motion.div>
@@ -612,22 +904,30 @@ const AdminPanel: React.FC = () => {
 
                   <div>
                       <h3 className="text-xl text-white mb-6 border-b border-gray-700 pb-2">Otevírací doba (Kalendář)</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek'].map((day) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'].map((day) => (
                               <div key={day} className="bg-[#0a2f1c] p-4 rounded border border-gray-600 flex justify-between items-center">
                                   <span className="font-bold text-gray-300">{day}</span>
                                   <div className="flex items-center gap-2 text-sm text-gray-400">
                                       <Clock size={14} />
-                                      <input type="text" defaultValue="09:00" className="bg-transparent w-12 text-center border-b border-gray-500 focus:border-gold outline-none" />
+                                      <input 
+                                        type="text" 
+                                        value={openingHours[day]?.start || ''} 
+                                        onChange={(e) => updateOpeningHours(day, 'start', e.target.value)}
+                                        className="bg-transparent w-12 text-center border-b border-gray-500 focus:border-gold outline-none" 
+                                        placeholder="00:00"
+                                      />
                                       <span>-</span>
-                                      <input type="text" defaultValue="18:00" className="bg-transparent w-12 text-center border-b border-gray-500 focus:border-gold outline-none" />
+                                      <input 
+                                        type="text" 
+                                        value={openingHours[day]?.end || ''} 
+                                        onChange={(e) => updateOpeningHours(day, 'end', e.target.value)}
+                                        className="bg-transparent w-12 text-center border-b border-gray-500 focus:border-gold outline-none" 
+                                        placeholder="00:00"
+                                      />
                                   </div>
                               </div>
                           ))}
-                           <div className="bg-[#0a2f1c] p-4 rounded border border-gray-600 opacity-50 flex justify-between items-center">
-                              <span className="font-bold text-gray-500">Víkend</span>
-                              <span className="text-xs uppercase border border-gray-600 px-2 py-1 rounded">Zavřeno</span>
-                           </div>
                       </div>
                   </div>
 
@@ -687,15 +987,18 @@ const AdminPanel: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold text-gold uppercase tracking-wider mb-1">
-                      Navrhnout náhradní termín (volitelné)
+                      Navrhnout náhradní termín z volných (volitelné)
                     </label>
-                    <input
-                      type="text"
-                      value={cancelAlternativeTermin}
-                      onChange={(e) => setCancelAlternativeTermin(e.target.value)}
-                      placeholder="Např. Středa 10. 6. v 15:30 nebo Čtvrtek v 10:00"
-                      className="w-full bg-[#072415] border border-gray-600 rounded p-2 text-white text-sm focus:border-gold outline-none"
+                    <AdminCalendar 
+                      selectedServiceId={cancelModalReservation.serviceId} 
+                      onSelectDateTime={(d, t) => {
+                          const dObj = new Date(d);
+                          setCancelAlternativeTermin(`${dObj.getDate()}.${dObj.getMonth()+1}.${dObj.getFullYear()} v ${t}`);
+                      }} 
                     />
+                    {cancelAlternativeTermin && (
+                        <div className="mt-2 text-sm text-gold">Vybraný náhradní termín: <strong>{cancelAlternativeTermin}</strong></div>
+                    )}
                   </div>
                 </div>
 
@@ -716,6 +1019,117 @@ const AdminPanel: React.FC = () => {
                     className="flex-1 bg-red-600 hover:bg-red-500 text-white rounded py-2 text-sm font-semibold transition"
                   >
                     Potvrdit zrušení
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {rescheduleModalReservation && (
+            <motion.div
+              key="reschedule-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setRescheduleModalReservation(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#0a2f1c] border border-gold/30 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+              >
+                <div className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-white transition" onClick={() => setRescheduleModalReservation(null)}>
+                  <X size={20} />
+                </div>
+                
+                <h4 className="text-xl text-white font-serif mb-3 flex items-center gap-2">
+                  <Calendar className="text-yellow-500" size={24} /> Změnit termín
+                </h4>
+                
+                <p className="text-sm text-gray-200 mb-4 pb-2 border-b border-white/10">
+                  Změňte termín na základě dohody (vybráním nového se starý přepíše a klientovi dorazí e-mail).<br/><br/>
+                  Zákazník: <strong className="text-gold">{rescheduleModalReservation.customerName}</strong>
+                </p>
+
+                <AdminCalendar 
+                    selectedServiceId={rescheduleModalReservation.serviceId} 
+                    onSelectDateTime={(d, t) => { setRescheduleDate(d); setRescheduleTime(t); }} 
+                />
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleModalReservation(null)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded py-2 text-sm transition"
+                  >
+                    Zrušit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReschedule}
+                    disabled={isLoading || !rescheduleDate || !rescheduleTime}
+                    className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white rounded py-2 text-sm font-semibold transition disabled:opacity-50"
+                  >
+                    {isLoading ? 'Měním...' : 'Změnit a odeslat'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {thankYouModalReservation && (
+            <motion.div
+              key="thank-you-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setThankYouModalReservation(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#0a2f1c] border border-gold/30 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+              >
+                <div className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-white transition" onClick={() => setThankYouModalReservation(null)}>
+                  <X size={20} />
+                </div>
+                
+                <div className="flex items-center gap-3 text-gold mb-4 border-b border-gray-700 pb-3">
+                  <Mail size={24} />
+                  <h3 className="text-xl font-bold font-serif">Odeslat poděkování</h3>
+                </div>
+
+                <div className="text-sm text-gray-300 mb-6 bg-[#072415] rounded p-3 border border-gray-700/50">
+                  <p className="mb-2">Chystáte se odeslat děkovný e-mail za dnešní masáž klientovi:</p>
+                  <p>Zákazník: <strong className="text-gold">{thankYouModalReservation.customerName}</strong><br />
+                  E-mail: <strong className="text-white">{thankYouModalReservation.email}</strong></p>
+                </div>
+
+                <div className="text-sm text-gray-400 mb-6 font-light">
+                  <p>Tento e-mail obsahuje text s poděkováním za návštěvu, nabídkou pitného režimu a rozloučením.</p>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setThankYouModalReservation(null)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded py-2 text-sm transition"
+                  >
+                    Storno
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmSendThankYouEmail}
+                    disabled={isLoading}
+                    className="flex-1 bg-[#1a4a33] hover:bg-gold hover:text-deep-green text-white rounded py-2 text-sm font-semibold transition border border-gold/30 disabled:opacity-50"
+                  >
+                    {isLoading ? 'Odesílám...' : 'Odeslat e-mail'}
                   </button>
                 </div>
               </motion.div>

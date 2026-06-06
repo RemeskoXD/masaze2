@@ -24,7 +24,7 @@ export const CONTACT_INFO = {
   subtitle: '',
   phone: '739 303 702',
   phoneClean: '420739303702', // Pro tel: odkazy
-  email: 'celkovezdravi@gmail.com',
+  email: 'zameckemasaze@seznam.cz',
   ig: 'Terez Rozkošná',
   bankAccount: '3190751019/3030',
   bankName: 'Air Bank',
@@ -116,5 +116,19 @@ export const SERVICES_LIST = [
     description: "Reset, který uvidíš i ucítíš. Dopřej si péči, která tě zastaví a zároveň rozzáří: šetrné odlíčení, výživná pleťová maska, ruční masáž obličeje a hlavy pro uvolnění od stresu a masáž jadeitovými destičkami pro redukci otoků a svěží vzhled. Pleť je pak viditelně jasnější, hladší a odpočatá.",
     price: "1200 Kč",
     duration: "60 min"
+  },
+  {
+    id: 12,
+    title: "Baňkování (Doplňková služba)",
+    description: "Baňkování využívá podtlak pomocí baněk, které se přikládají na potřebná místa. Ošetření uvolňuje svaly, podporuje prokrvení a regeneraci. Po terapii se cítíte uvolněně, na kůži mohou být dočasné stopy.",
+    price: "200 Kč",
+    duration: "15 minut"
+  },
+  {
+    id: 13,
+    title: "Moxa – nedýmivá (Doplňková služba)",
+    description: "Jemná zahřívací technika z tradiční čínské medicíny. Moxa prohřívá akupunkturní body, podporuje energii a harmonii těla. Přináší pocit tepla, klidu a celkového uvolnění. Vhodné i při silné menses, k uvolnění břišních bodů.",
+    price: "200 Kč",
+    duration: "15 minut"
   }
 ];

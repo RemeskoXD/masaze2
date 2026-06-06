@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -9,13 +9,28 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
+    
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const navLinks = [
@@ -31,16 +46,17 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed top-0 w-full z-50 px-4 sm:px-6 lg:px-8 pt-6 pointer-events-none"
+      className="fixed top-0 inset-x-0 z-50 pointer-events-none px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6"
     >
       <nav 
-        className={`mx-auto max-w-7xl rounded-2xl lg:rounded-full transition-all duration-500 pointer-events-auto ${
+        ref={navRef}
+        className={`mx-auto max-w-7xl rounded-2xl lg:rounded-full transition-all duration-500 pointer-events-auto relative ${
           scrolled 
             ? 'bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gold/10 py-2.5 px-3.5 sm:px-6' 
             : 'bg-white/80 backdrop-blur-md border border-white/40 shadow-sm py-3.5 px-3.5 sm:px-6'
         }`}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative z-10">
           <div className="flex-shrink-0 max-w-[70%] sm:max-w-none">
             <a href="#home" className="font-serif text-[15px] xs:text-base sm:text-lg md:text-2xl font-medium tracking-[0.08em] sm:tracking-widest transition-colors duration-300 text-text-dark hover:text-gold-dark block truncate sm:overflow-visible">
               TEREZA ROZKOŠNÁ
@@ -78,9 +94,10 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
           <div className="-mr-2 flex lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-xl focus:outline-none transition-colors text-text-dark hover:text-gold-dark bg-white/50"
+              className="inline-flex items-center justify-center p-3 sm:p-2 rounded-xl focus:outline-none transition-colors text-text-dark hover:text-gold-dark active:bg-gold/20 bg-white/50 border border-gold/10 shadow-sm"
+              aria-label="Menu"
             >
-              {isOpen ? <X size={20} /> : <Menu size={20} />}
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>

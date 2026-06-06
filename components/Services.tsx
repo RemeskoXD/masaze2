@@ -42,7 +42,7 @@ const Services: React.FC = () => {
         </motion.div>
 
         <div className="flex flex-col gap-6">
-            {SERVICES_LIST.filter(s => s.id !== 10 && s.id !== 11).map((service, index) => (
+            {SERVICES_LIST.filter(s => s.id !== 10 && s.id !== 11 && s.id !== 12 && s.id !== 13).map((service, index) => (
               <motion.div 
                 key={service.id} 
                 initial={{ opacity: 0, y: 20 }}
@@ -74,6 +74,48 @@ const Services: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+
+            {/* Doplňkové služby - Baňkování a Moxa */}
+            <div className="mt-16 mb-12">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="h-px w-6 bg-gold/40"></div>
+                <h3 className="text-2xl md:text-3xl font-serif text-gold-dark text-center italic">Doplňkové služby k masáži</h3>
+                <div className="h-px w-6 bg-gold/40"></div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {SERVICES_LIST.filter(s => s.id === 12 || s.id === 13).map((service, index) => (
+                  <motion.div 
+                    key={service.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: index * 0.2 }}
+                    className="group relative bg-[#FAF7F5] border border-[#E8DCCB] p-8 rounded-3xl transition-all duration-500 hover:border-gold/30 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex justify-between items-start gap-4 mb-3">
+                        <h4 className="text-xl md:text-2xl font-serif text-[#8C6B5D] leading-tight">
+                          {service.title.replace(' (Doplňková služba)', '')}
+                        </h4>
+                        <div className="text-right">
+                          <span className="text-xl font-semibold text-gold-dark font-sans block whitespace-nowrap">
+                            {service.price}
+                          </span>
+                          <span className="text-xs text-text-muted font-sans flex items-center justify-end gap-1 mt-1">
+                            <Clock size={12} /> {service.duration}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm text-text-muted font-light mb-6 leading-relaxed">
+                        {service.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
 
             {/* Speciální hýčkající balíčky */}
             <div className="mt-16 mb-12">

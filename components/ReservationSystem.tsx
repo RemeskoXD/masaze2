@@ -1,40 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SERVICES_LIST, API_BASE_URL } from '../constants';
 import { ReservationStatus } from '../types';
 import { Calendar, Clock, User, CheckCircle, Loader2, AlertCircle, Check, ArrowRight, ArrowLeft, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QRCodeSVG } from 'qrcode.react';
 
-const generateTimeSlots = (serviceId: number | null) => {
-  if (!serviceId) return [];
-  const service = SERVICES_LIST.find(s => s.id === serviceId);
-  if (!service) return [];
-
-  // Parse duration number (e.g. "60 min" -> 60)
-  const durationMatch = service.duration.match(/(\d+)/);
-  const duration = durationMatch ? parseInt(durationMatch[0]) : 60;
-
-  // Gap between massages based on duration
-  let gap = 0;
-  if (duration <= 30) gap = 15;
-  else if (duration === 60) gap = 30;
-  else gap = 30; // 90 min and more
-
-  const totalBlockMinutes = duration + gap;
-  const slots = [];
-  
-  let currentMinutes = 9 * 60; // Start at 09:00
-  const endMinutes = 19 * 60; // End at 19:00 (last slot finishes before OR starts at this time)
-  
-  // Create blocks that fit in the 9:00 - 19:00 window
-  while (currentMinutes + duration <= endMinutes) {
-      const h = Math.floor(currentMinutes / 60);
-      const m = currentMinutes % 60;
-      slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-      currentMinutes += totalBlockMinutes;
-  }
-
-  return slots;
-};
 
 const ReservationSystem: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -47,12 +17,94 @@ const ReservationSystem: React.FC = () => {
     phone: '',
     note: ''
   });
+  const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Calendar State
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const [openingHours, setOpeningHours] = useState<any>({
+    'Pondělí': { start: '09:00', end: '18:00' },
+    'Úterý': { start: '09:00', end: '18:00' },
+    'Středa': { start: '09:00', end: '18:00' },
+    'Čtvrtek': { start: '09:00', end: '18:00' },
+    'Pátek': { start: '09:00', end: '18:00' },
+    'Sobota': { start: '09:00', end: '18:00' },
+    'Neděle': { start: '09:00', end: '18:00' }
+  });
+
+  useEffect(() => {
+     const fetchSettings = async () => {
+         try {
+             const res = await fetch('/api/settings');
+             if (res.ok) {
+                 const data = await res.json();
+                 if (data.openingHours) setOpeningHours(data.openingHours);
+             }
+         } catch (e) {
+             console.log(e);
+         }
+     };
+     fetchSettings();
+  }, []);
+
+  const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
+    if (!serviceId) return [];
+    const service = SERVICES_LIST.find(s => s.id === serviceId);
+    if (!service) return [];
+  
+    // Parse duration number (e.g. "60 min" -> 60)
+    const durationMatch = service.duration.match(/(\d+)/);
+    let duration = durationMatch ? parseInt(durationMatch[0]) : 60;
+  
+    // Add addon durations
+    selectedAddons.forEach(addonId => {
+        const addon = SERVICES_LIST.find(s => s.id === addonId);
+        if (addon) {
+            const m = addon.duration.match(/(\d+)/);
+            if (m) duration += parseInt(m[0]);
+        }
+    });
+
+    let dayOfWeek = 'Pondělí';
+    if (dateStr) {
+      const d = new Date(dateStr);
+      dayOfWeek = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'][d.getDay()];
+    }
+
+    const daySettings = openingHours[dayOfWeek];
+    if (!daySettings || !daySettings.start || !daySettings.end) return [];
+
+    const startParts = daySettings.start.split(':');
+    const endParts = daySettings.end.split(':');
+    
+    let startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    let endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+  
+    // Gap between massages based on duration
+    let gap = 0;
+    if (duration <= 30) gap = 15;
+    else if (duration === 60) gap = 30;
+    else gap = 30; // 90 min and more
+  
+    const totalBlockMinutes = duration + gap;
+    const slots = [];
+    
+    let currentMinutes = startMinutes;
+    
+    // Create blocks that fit in the window
+    while (currentMinutes + duration <= endMinutes) {
+        const h = Math.floor(currentMinutes / 60);
+        const m = currentMinutes % 60;
+        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+        currentMinutes += totalBlockMinutes;
+    }
+  
+    return slots;
+  };
+
 
   const handleServiceSelect = (id: number) => {
     setSelectedService(id);
@@ -118,7 +170,41 @@ const ReservationSystem: React.FC = () => {
         return;
     }
 
+    const mainService = SERVICES_LIST.find(s => s.id === selectedService);
+    let totalPriceMatch = mainService?.price.match(/\d+/);
+    let totalPrice = totalPriceMatch ? parseInt(totalPriceMatch[0]) : 0;
+    
+    selectedAddons.forEach(id => {
+      const addon = SERVICES_LIST.find(s => s.id === id);
+      if (addon) {
+        const match = addon.price.match(/\d+/);
+        if (match) {
+          totalPrice += parseInt(match[0]);
+        }
+      }
+    });
+
+    const parts = formData.name.trim().split(/\s+/);
+    const surname = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    const surnameClean = surname.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, '');
+
+    const dateObj = new Date(selectedDate!);
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateObj.getFullYear().toString().slice(-2);
+    const timeParts = selectedTime!.split(':');
+    const vs = `${day}${month}${year}${timeParts[0]}${timeParts[1]}`;
+
     const sanitize = (str: string) => str.replace(/[<>]/g, '').trim();
+
+    const addonTexts = selectedAddons.map(id => {
+        const addon = SERVICES_LIST.find(s => s.id === id);
+        return addon ? `${addon.title} (${addon.price}, ${addon.duration})` : null;
+    }).filter(Boolean).join(', ');
+
+    const finalNote = selectedAddons.length > 0 
+        ? `${sanitize(formData.note)}\n\n--- Vybrané doplňky ---\n${addonTexts}`.trim()
+        : sanitize(formData.note);
 
     const reservationData = {
         serviceId: selectedService,
@@ -127,7 +213,10 @@ const ReservationSystem: React.FC = () => {
         customerName: sanitize(formData.name),
         email: sanitize(formData.email),
         phone: sanitize(formData.phone),
-        note: sanitize(formData.note)
+        note: finalNote,
+        totalPrice,
+        surnameClean,
+        vs
     };
 
     try {
@@ -165,11 +254,52 @@ const ReservationSystem: React.FC = () => {
     setSelectedService(null);
     setSelectedDate(null);
     setSelectedTime(null);
+    setSelectedAddons([]);
     setFormData({ name: '', email: '', phone: '', note: '' });
     setErrorMsg(null);
   };
 
   if (submitted) {
+    const mainService = SERVICES_LIST.find(s => s.id === selectedService);
+    let totalPriceMatch = mainService?.price.match(/\d+/);
+    let totalPrice = totalPriceMatch ? parseInt(totalPriceMatch[0]) : 0;
+    
+    selectedAddons.forEach(id => {
+      const addon = SERVICES_LIST.find(s => s.id === id);
+      if (addon) {
+        const match = addon.price.match(/\d+/);
+        if (match) {
+          totalPrice += parseInt(match[0]);
+        }
+      }
+    });
+
+    const parts = formData.name.trim().split(/\s+/);
+    const surname = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    const surnameClean = surname.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, '');
+
+    const dateObj = new Date(selectedDate!);
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateObj.getFullYear().toString().slice(-2);
+    const timeParts = selectedTime!.split(':');
+    const vs = `${day}${month}${year}${timeParts[0]}${timeParts[1]}`;
+
+    const getIban = () => {
+      const bank = "3030";
+      const accNum = "3190751019";
+      const bban = `${bank}${"0".repeat(6)}${accNum}`;
+      const numericIban = `${bban}123500`;
+      let remainder = 0;
+      for (let i = 0; i < numericIban.length; i++) {
+          remainder = (remainder * 10 + parseInt(numericIban[i], 10)) % 97;
+      }
+      const checkDigits = (98 - remainder).toString().padStart(2, '0');
+      return `CZ${checkDigits}${bban}`;
+    };
+
+    const spaydString = `SPD*1.0*ACC:${getIban()}*AM:${totalPrice}.00*CC:CZK*X-VS:${vs}*MSG:Masaze ${surnameClean}`.toUpperCase();
+
     return (
       <div className="py-32 bg-beige-bg flex items-center justify-center px-4 relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -177,26 +307,38 @@ const ReservationSystem: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="bg-white border border-gold/20 p-12 md:p-16 rounded-[2rem] shadow-[0_20px_50px_rgb(0,0,0,0.05)] max-w-2xl text-center relative z-10"
+            className="bg-white border border-gold/20 p-8 md:p-12 rounded-[2rem] shadow-[0_20px_50px_rgb(0,0,0,0.05)] w-full max-w-2xl text-center relative z-10"
           >
             <motion.div 
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-              className="mx-auto w-24 h-24 bg-gold/10 rounded-full flex items-center justify-center mb-8"
+              className="mx-auto w-20 h-20 bg-gold/10 rounded-full flex items-center justify-center mb-6"
             >
-                <CheckCircle size={48} className="text-gold-dark" strokeWidth={1.5} />
+                <CheckCircle size={40} className="text-gold-dark" strokeWidth={1.5} />
             </motion.div>
-            <h3 className="text-4xl md:text-5xl text-text-dark font-serif mb-6">Rezervace odeslána</h3>
-            <p className="text-text-muted text-lg mb-10 font-light leading-relaxed">
+            <h3 className="text-3xl md:text-4xl text-text-dark font-serif mb-4">Rezervace odeslána</h3>
+            <p className="text-text-muted mb-8 font-light leading-relaxed max-w-lg mx-auto">
                 Děkuji, <strong className="font-medium text-text-dark">{formData.name}</strong>. Vaše žádost o termín <br/>
                 <strong className="font-medium text-text-dark">{new Date(selectedDate!).toLocaleDateString('cs-CZ')} v {selectedTime}</strong> byla úspěšně přijata.
                 <br /><br />
-                <span className="text-sm text-gold-dark uppercase tracking-widest font-medium">Vyčkejte prosím na potvrzení.</span>
+                <span className="text-sm text-gold-dark uppercase tracking-widest font-medium">Vyčkejte prosím na potvrzení.<br/><span className="text-xs normal-case tracking-normal opacity-80">(Zkontrolujte si prosím i složku Hromadné nebo SPAM)</span></span>
             </p>
+            
+            <div className="bg-beige-bg/50 border border-gold/10 p-6 rounded-2xl mb-8 flex flex-col items-center">
+                <h4 className="text-sm uppercase tracking-widest font-medium text-text-dark mb-4">Platba převodem</h4>
+                <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
+                    <QRCodeSVG value={spaydString} size={160} level="M" />
+                </div>
+                <p className="text-2xl font-serif text-text-dark mb-1">{totalPrice} Kč</p>
+                <p className="text-sm text-text-muted font-light mb-2">Číslo účtu: <strong className="font-medium text-text-dark">3190751019/3030</strong> (Air Bank)</p>
+                <p className="text-sm text-text-muted font-light mb-2">Variabilní symbol: <strong className="font-medium text-text-dark">{vs}</strong></p>
+                <p className="text-xs text-text-muted italic">Při platbě přes QR kód se údaje vyplní automaticky.</p>
+            </div>
+
             <button 
                 onClick={resetForm} 
-                className="px-10 py-4 bg-transparent border border-gold/50 text-gold-dark hover:bg-gold hover:text-white hover:border-gold transition-all duration-500 rounded-full uppercase tracking-[0.2em] font-medium text-sm"
+                className="px-10 py-4 bg-transparent border border-gold/50 text-gold-dark hover:bg-gold hover:text-white hover:border-gold transition-all duration-500 rounded-full uppercase tracking-[0.2em] font-medium text-sm w-full sm:w-auto"
             >
                 Zpět na úvod
             </button>
@@ -283,7 +425,7 @@ const ReservationSystem: React.FC = () => {
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-4">
-                            {SERVICES_LIST.map((service) => {
+                            {SERVICES_LIST.filter(s => s.id !== 12 && s.id !== 13).map((service) => {
                                 const isSelected = selectedService === service.id;
                                 // Fake "original" price logic + 50 CZK
                                 const numericPriceMatch = service.price.match(/\d+/);
@@ -426,7 +568,7 @@ const ReservationSystem: React.FC = () => {
                                         initial="hidden"
                                         animate="show"
                                     >
-                                        {generateTimeSlots(selectedService).map((time) => {
+                                        {generateTimeSlots(selectedService, selectedAddons).map((time) => {
                                             const isSelected = selectedTime === time;
                                             return (
                                             <motion.button
@@ -542,6 +684,39 @@ const ReservationSystem: React.FC = () => {
                                 <label htmlFor="note" className="absolute left-0 top-5 text-text-muted/70 text-sm transition-all peer-focus:-top-2 peer-focus:text-xs peer-focus:text-gold peer-valid:-top-2 peer-valid:text-xs peer-valid:text-gold cursor-text">
                                     Zdravotní omezení nebo speciální přání (volitelné)
                                 </label>
+                            </div>
+
+                            {/* Doplnky Selection */}
+                            <div className="pt-6 pb-2 border-t border-gold/10 mt-6">
+                                <h4 className="text-sm uppercase tracking-[0.15em] font-medium text-text-dark mb-4">Máte zájem o doplňkovou péči? (volitelné)</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {SERVICES_LIST.filter(s => s.id === 12 || s.id === 13).map((addon) => {
+                                        const isSelected = selectedAddons.includes(addon.id);
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={addon.id}
+                                                onClick={() => setSelectedAddons(prev => prev.includes(addon.id) ? prev.filter(id => id !== addon.id) : [...prev, addon.id])}
+                                                className={`group flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-300 ${
+                                                    isSelected 
+                                                    ? 'border-gold bg-gold/5 shadow-sm' 
+                                                    : 'border-gold/20 hover:border-gold/50 bg-transparent'
+                                                }`}
+                                            >
+                                                <div className={`mt-1 shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-gold border-gold text-white' : 'border-gold/40 text-transparent group-hover:border-gold/70'}`}>
+                                                    <Check size={14} />
+                                                </div>
+                                                <div>
+                                                    <div className={`font-serif text-lg mb-1 leading-tight ${isSelected ? 'text-gold-dark' : 'text-text-dark group-hover:text-gold-dark'}`}>
+                                                        {addon.title.replace(' (Doplňková služba)', '')}
+                                                    </div>
+                                                    <div className="text-sm font-medium text-text-dark mb-2">{addon.price} <span className="text-text-muted font-light">/ {addon.duration}</span></div>
+                                                    <div className="text-xs text-text-muted font-light leading-relaxed">{addon.description}</div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             {errorMsg && (

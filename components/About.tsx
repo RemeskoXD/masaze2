@@ -35,7 +35,7 @@ const About: React.FC = () => {
               </p>
 
               <p>
-                Právě to mě přivedlo k hlubšímu hledání. Začala jsem studovat psychologii, fyziologii, bylinkářství, medicinální houby a k mým základům patří také studium Tradiční čínské medicíny a dlouholetá praxe v muzikoterapii. Šla jsem si vlastní cestou, i když jsem kolem sebe často slyšela pochybnosti a nepochopení.
+                Právě to mě přivedlo k hlubšímu hledání. Začala jsem studovat psychologii, fyziologii, bylinkářství, medicinální houby a k mým základům patří také studium Tradiční čínské medicíny a dlouholetá praxe v muzikoterapii i masážích. Mám toho odmasírovaného opravdu dost a jsem profesionál, který si jde vlastní cestou.
               </p>
 
               <p className="font-medium text-text-dark">
@@ -43,7 +43,7 @@ const About: React.FC = () => {
               </p>
 
               <p>
-                U mě najdete nejen skutečně kvalitní masáž v krásném prostředí, ale i citlivý přístup k Vám a Vašemu zdraví.
+                U mě najdete nejen skutečně kvalitní masáž v krásném prostředí na zámku v Načeradci, ale i citlivý přístup k Vám a Vašemu zdraví.
               </p>
 
               <p className="italic text-gold-dark text-xl font-serif pt-4">
