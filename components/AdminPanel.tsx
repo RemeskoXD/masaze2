@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SERVICES_LIST } from '../constants';
 import { ReservationStatus, Service } from '../types';
-import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift, ChevronLeft, ChevronRight, Download, UploadCloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const AdminPanel: React.FC = () => {
@@ -31,6 +31,9 @@ const AdminPanel: React.FC = () => {
   const resItemsPerPage = 10;
   const resTotalPages = Math.ceil(reservations.length / resItemsPerPage);
   const paginatedReservations = reservations.slice((resPage - 1) * resItemsPerPage, resPage * resItemsPerPage);
+
+  // Backup/Restore
+  const [backupRestoreMsg, setBackupRestoreMsg] = useState('');
 
   // States for cancellation dialog
   const [cancelModalReservation, setCancelModalReservation] = useState<any | null>(null);
@@ -318,6 +321,70 @@ const AdminPanel: React.FC = () => {
       };
       setOpeningHours(newHours);
       updateSetting('openingHours', newHours);
+  };
+
+  const handleBackup = async () => {
+    try {
+        const response = await fetch('/api/admin/backup', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `záloha_masáže_${new Date().toLocaleDateString('cs-CZ').replace(/\s+/g, '')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            setBackupRestoreMsg('Záloha úspěšně stažena.');
+        } else {
+            setBackupRestoreMsg('Chyba při stahování zálohy.');
+        }
+    } catch (e) {
+        setBackupRestoreMsg('Chyba sítě při stahování zálohy.');
+    }
+    setTimeout(() => setBackupRestoreMsg(''), 5000);
+  };
+
+  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!window.confirm('Opravdu chcete přepsat celou databázi tímto souborem? Tuto akci nelze vrátit zpět.')) {
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const content = event.target?.result as string;
+            const data = JSON.parse(content);
+            const response = await fetch('/api/admin/restore', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                setBackupRestoreMsg('Záloha úspěšně obnovena! Data se načítají...');
+                await fetchData();
+                await fetchSettings();
+            } else {
+                setBackupRestoreMsg('Chyba při obnově: Neplatný formát dat bo server odmítl požadavek.');
+            }
+        } catch (error) {
+            setBackupRestoreMsg('Chyba při čtení souboru (neplatný JSON).');
+        }
+        e.target.value = ''; // Reset
+        setTimeout(() => setBackupRestoreMsg(''), 5000);
+    };
+    reader.readAsText(file);
   };
 
   const fetchData = async (token: string = adminToken) => {
@@ -932,6 +999,36 @@ const AdminPanel: React.FC = () => {
                   </div>
 
                   <div className="pt-6 border-t border-gray-700">
+                      <h3 className="text-xl text-white mb-6 border-b border-gray-700 pb-2">Záloha a obnova databáze</h3>
+                      
+                      {backupRestoreMsg && (
+                          <div className="mb-4 text-sm font-semibold text-gold bg-gold/10 p-3 rounded">
+                              {backupRestoreMsg}
+                          </div>
+                      )}
+
+                      <div className="flex gap-4 flex-col md:flex-row">
+                          <button 
+                              onClick={handleBackup} 
+                              className="bg-[#1a4a33] hover:bg-gold text-white hover:text-deep-green border border-gold/30 rounded px-6 py-3 flex items-center justify-center gap-2 transition font-bold"
+                          >
+                              <Download size={20} /> Stáhnout zálohu (JSON)
+                          </button>
+                          
+                          <label className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded px-6 py-3 flex items-center justify-center gap-2 transition text-white cursor-pointer group">
+                              <input 
+                                  type="file" 
+                                  accept=".json" 
+                                  onChange={handleRestore} 
+                                  className="hidden" 
+                              />
+                              <UploadCloud size={20} className="group-hover:text-gold transition" /> Nahrát zálohu ze souboru
+                          </label>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-3">Záloha obsahuje všechny rezervace, poukazy, nastavení i ceník.</p>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-700 mt-6">
                       <h3 className="text-xl text-white mb-4">Stav serveru</h3>
                        <div className="flex items-center gap-2 text-green-400 text-sm">
                           <CheckCircle size={16} />

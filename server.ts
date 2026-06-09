@@ -104,7 +104,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Configure Nodemailer transporter
   const transporter = nodemailer.createTransport({
@@ -569,6 +569,31 @@ async function startServer() {
     }
   });
 
+  app.get('/api/admin/backup', requireAdmin, async (req, res) => {
+    try {
+      const db = await getDB();
+      res.json(db);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ success: false, message: 'Chyba při zálohování' });
+    }
+  });
+
+  app.post('/api/admin/restore', requireAdmin, async (req, res) => {
+    try {
+      const backupData = req.body;
+      // Basic validation
+      if (!backupData || !Array.isArray(backupData.reservations)) {
+        return res.status(400).json({ success: false, message: 'Neplatný formát zálohy' });
+      }
+      await saveDB(backupData);
+      res.json({ success: true, message: 'Záloha byla úspěšně obnovena.' });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ success: false, message: 'Chyba při obnově' });
+    }
+  });
+
   app.post('/api/admin/reservation/:id/status', requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
@@ -658,9 +683,7 @@ async function startServer() {
           let bodyTextReason = '';
           if (reason) {
             bodyTextReason = `
-              <div style="margin: 15px 0; padding: 12px; border-left: 4px solid #ef4444; background-color: #fef2f2; border-radius: 4px; font-family: sans-serif; max-width: 500px;">
-                <strong>Důvod zrušení/změny:</strong> ${reason}
-              </div>
+              <p><strong>Důvod zrušení:</strong> ${reason}</p>
             `;
           }
 
@@ -717,7 +740,7 @@ async function startServer() {
               html: `
                 <h3>Dobrý den, ${reservation.customerName},</h3>
                 <p>ještě jednou moc děkuji za Vaši dnešní návštěvu. Doufám, že se po masáži cítíte uvolněně a zregenerovaně.</p>
-                <p>Nezapomeňte dnes pít více vody, aby se podpořelo vyplavování toxinů a dozněly uvolňující účinky masáže.</p>
+                <p>Nezapomeňte dnes pít více vody, aby se podpořilo vyplavování toxinů a dozněly uvolňující účinky masáže.</p>
                 <p>Kdykoliv budete potřebovat znovu zrelaxovat, ráda Vás opět uvidím.</p>
                 <p>Mějte krásný zbytek dne.</p>
                 <p>S úctou a přáním pevného zdraví,<br>Tereza Rozkošná<br>Zámek Načeradec 1<br>Telefon: ${PHONE_NUMBER}</p>

@@ -27,24 +27,35 @@ const About: React.FC = () => {
               </p>
               
               <p>
-                Moje cesta začala nenápadně. Na zahradě u babičky, v jejím klidu a přirozeném přístupu k životu. Vedle toho jsem ale vnímala úplně jiný svět – stres, tlak ze školy, práce i okolí. A někde mezi tím jsem začala hledat rovnováhu.
+                Moje cesta začala nenápadně v babiččině zahradě, v jejím klidu a přirozeném přístupu k životu. Kontrastem k této harmonii byl mnohdy náročný moderní svět plný stresu, tlaku z práce a okolí. Právě někde mezi těmito póly se zrodila moje touha nacházet v životě opravdovou rovnováhu.
               </p>
 
               <p>
-                Silně se mi zapsaly i zkušenosti, kdy jsem doprovázela blízké k lékařům. Následně i mé přímé zkušenosti, kdy jsem potřebovala opravdovou pomoc a místo toho jsem viděla nezájem, spěch a pouhé řešení příznaků. Chyběl mi opravdový zájem o člověka jako celek – nejen o jeho tělo, ale i psychiku a myšlení, které ovládá většinu nemocí a bolestí.
+                Velkým zlomem pro mě byly i osobní zkušenosti – ať už v roli pacienta, tak jako doprovod mých blízkých k lékařům. Opakovaně jsem v běžném systému postrádala hlubší zájem, narazila na spěch a občas i na pouhé povrchní tlumení příznaků namísto hledání skutečných příčin. Chyběl mi zkrátka opravdový zájem o člověka jako o celek. O jeho psychiku a myšlení, jejichž harmonie ovlivňuje v těle téměř vše.
               </p>
 
               <p>
-                Právě to mě přivedlo k hlubšímu hledání. Začala jsem studovat psychologii, fyziologii, bylinkářství, medicinální houby a k mým základům patří také studium Tradiční čínské medicíny a dlouholetá praxe v muzikoterapii i masážích. Mám toho odmasírovaného opravdu dost a jsem profesionál, který si jde vlastní cestou.
+                Právě to mě přivedlo k hlubšímu studiu. Ponořila jsem se do psychologie, fyziologie, bylinkářství a medicinálních hub. K mým dnešním základům patří jak studium Tradiční čínské medicíny, tak dlouholetá praxe v muzikoterapii a různých masážních technikách.
               </p>
 
               <p className="font-medium text-text-dark">
-                Nepřestala jsem. Dnes propojuji roky praxe i teorie do toho, co dělám.
+                Ve své současné praxi propojuji letité zkušenosti s komplexními teoretickými znalostmi do funkčního a smysluplného celku.
               </p>
 
               <p>
-                U mě najdete nejen skutečně kvalitní masáž v krásném prostředí na zámku v Načeradci, ale i citlivý přístup k Vám a Vašemu zdraví.
+                U mě tak najdete nejen poctivou, kvalitní masáž v malebném a klidném prostředí zámku v Načeradci, ale především respektující, individuální a laskavý přístup k Vám a Vašemu zdraví.
               </p>
+
+              <div className="pt-2">
+                <a 
+                  href="https://docs.google.com/forms/d/12ojtmka1yFvwILGbfWLZmUhUskdT0shqH_wil_mMilA/viewform" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-serif uppercase tracking-widest text-sm rounded hover:bg-gold-dark transition-colors"
+                >
+                  Vstupní dotazník ke konzultaci
+                </a>
+              </div>
 
               <p className="italic text-gold-dark text-xl font-serif pt-4">
                 Těším se na setkání.
