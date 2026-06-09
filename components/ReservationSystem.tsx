@@ -363,7 +363,7 @@ const ReservationSystem: React.FC = () => {
             <div className="h-px w-8 bg-gold/50"></div>
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-text-dark mb-6">Rezervujte si svůj čas</h2>
-          <p className="text-text-muted max-w-xl mx-auto font-light text-lg">Vyberte si proceduru a termín, který vám nejvíce vyhovuje. Vše jednoduše a elegantně online.</p>
+          <p className="text-text-muted max-w-xl mx-auto font-light text-lg">Vyberte si proceduru a termín, který Vám nejvíce vyhovuje. Vše jednoduše a elegantně online.</p>
         </motion.div>
 
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">

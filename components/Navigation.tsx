@@ -93,7 +93,10 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
           </div>
           <div className="-mr-2 flex lg:hidden">
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(!isOpen);
+              }}
               className="inline-flex items-center justify-center p-3 sm:p-2 rounded-xl focus:outline-none transition-colors text-text-dark hover:text-gold-dark active:bg-gold/20 bg-white/50 border border-gold/10 shadow-sm"
               aria-label="Menu"
             >

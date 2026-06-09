@@ -23,41 +23,37 @@ const About: React.FC = () => {
             
             <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light">
               <p>
-                Celý život mě přirozeně přitahuje to, co pomáhá – rostliny, houby, hudba i dotek. Nejen, že mě to baví, ale dává mi to hluboký smysl a vnitřní sílu.
+                Vítejte ve světě, kde se čas na chvíli zpomalí. Celý život mě přirozeně přitahuje to, co skutečně pomáhá a léčí – síla přírody, harmonizující frekvence hudby a vědomý, uzdravující dotek. Je to vášeň, která mi dává neuvěřitelnou vnitřní sílu, a tu s obrovskou radostí předávám dál.
               </p>
               
               <p>
-                Moje cesta začala nenápadně v babiččině zahradě, v jejím klidu a přirozeném přístupu k životu. Kontrastem k této harmonii byl mnohdy náročný moderní svět plný stresu, tlaku z práce a okolí. Právě někde mezi těmito póly se zrodila moje touha nacházet v životě opravdovou rovnováhu.
+                Mým cílem je pro Vás vytvořit <strong>bezpečný přístav uvolnění</strong> – místo, kde se jakýkoliv stres spolehlivě rozplyne do ztracena. K tomuto přístupu mě dovedly vlastní zkušenosti, kdy mi při řešení zdravotních obtíží chyběl prostor pro lidskost, opravdový zájem a hledání skutečných příčin namísto povrchního tlumení příznaků.
               </p>
 
               <p>
-                Velkým zlomem pro mě byly i osobní zkušenosti – ať už v roli pacienta, tak jako doprovod mých blízkých k lékařům. Opakovaně jsem v běžném systému postrádala hlubší zájem, narazila na spěch a občas i na pouhé povrchní tlumení příznaků namísto hledání skutečných příčin. Chyběl mi zkrátka opravdový zájem o člověka jako o celek. O jeho psychiku a myšlení, jejichž harmonie ovlivňuje v těle téměř vše.
+                Proto vnímám člověka jako nesmírně dokonalý propojený celek. Intenzivně jsem se ponořila do studia psychologie, bylinkářství a mocných účinků medicinálních hub. Svůj přístup dnes pevně opírám o studium Tradiční čínské medicíny a letitou praxi v muzikoterapii i pokročilých masážních technikách.
+              </p>
+
+              <p className="font-medium text-text-dark text-xl pt-2">
+                Dávám do své práce celé srdce, maximum pozornosti a veškerou energii.
               </p>
 
               <p>
-                Právě to mě přivedlo k hlubšímu studiu. Ponořila jsem se do psychologie, fyziologie, bylinkářství a medicinálních hub. K mým dnešním základům patří jak studium Tradiční čínské medicíny, tak dlouholetá praxe v muzikoterapii a různých masážních technikách.
+                V malebném a tichém prostředí zámku v Načeradci Vás tak nečeká jen obyčejná masáž. Pokaždé se můžete těšit na <strong>špičkovou péči, absolutní respekt k Vašemu tělu a pozitivně laděnou energii</strong>, zaměřenou přesně na to, co právě nejvíce potřebujete.
               </p>
 
-              <p className="font-medium text-text-dark">
-                Ve své současné praxi propojuji letité zkušenosti s komplexními teoretickými znalostmi do funkčního a smysluplného celku.
-              </p>
-
-              <p>
-                U mě tak najdete nejen poctivou, kvalitní masáž v malebném a klidném prostředí zámku v Načeradci, ale především respektující, individuální a laskavý přístup k Vám a Vašemu zdraví.
-              </p>
-
-              <div className="pt-2">
+              <div className="pt-4 pb-2">
                 <a 
                   href="https://docs.google.com/forms/d/12ojtmka1yFvwILGbfWLZmUhUskdT0shqH_wil_mMilA/viewform" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-serif uppercase tracking-widest text-sm rounded hover:bg-gold-dark transition-colors"
+                  className="inline-flex items-center justify-center px-8 py-4 bg-gold text-white font-sans font-medium uppercase tracking-widest text-sm rounded transition-all duration-300 hover:bg-gold-dark hover:shadow-lg"
                 >
-                  Vstupní dotazník ke konzultaci
+                  Vyplnit dotazník ke konzultaci
                 </a>
               </div>
 
-              <p className="italic text-gold-dark text-xl font-serif pt-4">
+              <p className="italic text-gold-dark text-xl font-serif pt-2">
                 Těším se na setkání.
               </p>
 

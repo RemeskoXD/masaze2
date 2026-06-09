@@ -328,7 +328,7 @@ const GiftVouchers: React.FC = () => {
                      </div>
                      <h3 className="text-3xl font-serif text-text-dark mb-4">Objednávka přijata</h3>
                      <p className="text-text-muted mb-8 max-w-md mx-auto">
-                        Děkujeme! Vaše žádost o dárkový poukaz byla odeslána. Na váš e-mail <strong>{formData.email}</strong> jsme zaslali pokyny k platbě převodem.
+                        Děkujeme! Vaše žádost o dárkový poukaz byla odeslána. Na Váš e-mail <strong>{formData.email}</strong> jsme zaslali pokyny k platbě převodem.
                      </p>
                      <button 
                          onClick={() => {

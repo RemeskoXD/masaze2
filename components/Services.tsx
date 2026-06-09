@@ -24,10 +24,11 @@ const Services: React.FC = () => {
             <div className="h-px w-8 bg-gold/50"></div>
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-text-dark mb-8 leading-tight italic">
-            "Dopřejte si masáž, která uvolní vaše tělo i mysl a přinese vám skutečný pocit klidu."
+            "Dopřejte si péči, která uvolní Vaše tělo i mysl a přinese Vám skutečný pocit klidu."
           </h2>
           <p className="text-text-muted max-w-2xl mx-auto font-light text-lg mb-4">
-            Každá masáž je rituál. Cena odráží nejen čas, ale i kvalitu péče, energii a přírodní produkty nejvyšší kvality. Při pravidelné docházce (např. 5 návštěv) je možná individuální cena nebo bonus k proceduře.
+            Každá masáž je rituál. Cena mých služeb tak odráží nejen čas, který Vám věnuji, ale především celkovou kvalitu péče, předanou energii a špičkové přírodní produkty. 
+            Při Vaší pravidelné docházce (např. 5 návštěv) se můžeme vždy domluvit na individuální zvýhodněné ceně, případně se můžete těšit na bonusovou péči k proceduře.
           </p>
           
           <div className="inline-flex flex-col sm:flex-row items-center justify-center gap-3 bg-gold/5 border border-gold/20 px-6 py-4 rounded-2xl mx-auto mt-6">
@@ -212,7 +213,7 @@ const Services: React.FC = () => {
                     </div>
                     
                     <p className="text-xs uppercase tracking-wider text-gold-dark font-semibold mb-4">Hlava & Obličej</p>
-                    <p className="text-sm text-text-muted font-light mb-6">Reset, který uvidíte i ucítíte. Dopřejte si hýčkání, které vás zastaví v čase:</p>
+                    <p className="text-sm text-text-muted font-light mb-6">Reset, který uvidíte i ucítíte. Dopřejte si hýčkání, které Vás zastaví v čase:</p>
                     
                     <ul className="space-y-3.5 mb-8">
                       <li className="flex items-start gap-2.5 text-sm text-text-muted font-light">
@@ -260,7 +261,7 @@ const Services: React.FC = () => {
               <div>
                 <h4 className="text-xl font-serif text-text-dark mb-2">Jsem i mobilní masérka</h4>
                 <p className="text-text-muted font-light leading-relaxed">
-                  Dojedu k vám na firmu či domů. Sazba <strong className="font-medium text-text-dark">6 Kč / 1 km</strong>. <br/>
+                  Dojedu k Vám na firmu či domů. Sazba <strong className="font-medium text-text-dark">6 Kč / 1 km</strong>. <br/>
                   Je potřeba vzdušný prostor alespoň 2,5 m × 2 metry a přístup k tekoucí vodě.
                 </p>
               </div>
@@ -287,19 +288,19 @@ const Services: React.FC = () => {
                   <h4 className="font-sans font-medium text-gold-dark mb-3 text-sm uppercase tracking-widest flex items-center gap-2">
                     <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Bylinné dávkování
                   </h4>
-                  <p className="text-sm text-text-muted font-light leading-relaxed">Chcete si byliny natrhat sami? Pomohu vám bezpečně nastavit dávkování bylin a silných medicinálních hub přesně na míru vašemu tělu.</p>
+                  <p className="text-sm text-text-muted font-light leading-relaxed">Chcete si byliny natrhat sami? Pomohu Vám bezpečně nastavit dávkování bylin a silných medicinálních hub přesně na míru Vašemu tělu.</p>
                 </div>
                 <div className="group">
                   <h4 className="font-sans font-medium text-gold-dark mb-3 text-sm uppercase tracking-widest flex items-center gap-2">
                     <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Integrace doplňků
                   </h4>
-                  <p className="text-sm text-text-muted font-light leading-relaxed">Předchozí bylinné poradenství rozšíříme o celkovou revizi vašich stávajících doplňků stravy, abychom odstranili duplicity a vše dávalo smysl.</p>
+                  <p className="text-sm text-text-muted font-light leading-relaxed">Předchozí bylinné poradenství rozšíříme o celkovou revizi Vašich stávajících doplňků stravy, abychom odstranili duplicity a vše dávalo smysl.</p>
                 </div>
                 <div className="group">
                   <h4 className="font-sans font-medium text-gold-dark mb-3 text-sm uppercase tracking-widest flex items-center gap-2">
                     <span className="w-6 h-px bg-gold/50 group-hover:w-10 transition-all duration-300"></span> Celostní průvodce
                   </h4>
-                  <p className="text-sm text-text-muted font-light leading-relaxed">Kompletní balíček bylin a doplňků spojený s poradenstvím pro zdravý životní styl a cvičením formou hravých, efektivních vychytávek, které vás budou bavit.</p>
+                  <p className="text-sm text-text-muted font-light leading-relaxed">Kompletní balíček bylin a doplňků spojený s poradenstvím pro zdravý životní styl a cvičením formou hravých, efektivních vychytávek, které Vás budou bavit.</p>
                 </div>
               </div>
             </motion.div>
@@ -320,11 +321,11 @@ const Services: React.FC = () => {
               </h3>
               <div className="text-sm text-text-muted space-y-5 font-light leading-relaxed">
                 <p>
-                  Kontraindikací masáží je souhrn stavů, kdy masáž nelze provést, aby nedošlo ke zhoršení zdravotního stavu. Zahrnuje akutní a infekční nemoci, horečku, záněty, nádorová onemocnění, závažná krvácivá onemocnění, kožní problémy, akutní úrazy, onemocnění dutiny břišní, silnou únavu, stavy po operacích. Dále při menses, poranění, křečové žíly, akutní psychózy, epilepsie, období šestinedělí.
+                  Kontraindikací masáží je souhrn stavů, kdy masáž nelze provést, aby nedošlo ke zhoršení zdravotního stavu. Zahrnují akutní a infekční nemoci, horečku, záněty, nádorová onemocnění, závažná krvácivá onemocnění, kožní problémy, akutní úrazy, onemocnění dutiny břišní, silnou únavu a stavy po operacích. Dále je masáž nevhodná při menses, poraněních, křečových žilách, akutních psychózách, epilepsii nebo v období šestinedělí.
                 </p>
                 <p className="p-5 bg-white rounded-2xl border border-[#E8DCCB]/50 shadow-sm">
                   <strong className="font-medium text-text-dark block mb-2">Masáž nelze provádět bezprostředně po jídle, vždy min. hodinu po jídle.</strong>
-                  Důvody pro odmítnutí zákazníka: nevhodné chování (pod vlivem alkoholu, drog, či arogance). Služby jsou prováděny na zdravých jedincích. Při činnosti se neprovádí žádné výkony na nemocné kůži, manipulace s jizvami a mateřskými znaménky, výkony na sliznicích, oční spojivce a rohovce apod.
+                  Důvody pro odmítnutí klienta: nevhodné či arogantní chování a stav pod vlivem alkoholu nebo drog. Služby jsou prováděny na zdravých jedincích. Při činnosti se neprovádí žádné výkony na nemocné kůži, manipulace s jizvami, mateřskými znaménky, sliznicemi apod.
                 </p>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <li className="flex items-start gap-3"><span className="text-[#8C6B5D] mt-0.5">•</span> Kardiostimulátor</li>

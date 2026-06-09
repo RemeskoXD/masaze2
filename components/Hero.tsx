@@ -63,11 +63,11 @@ const Hero: React.FC = () => {
           className="mt-8 max-w-2xl mx-auto text-lg text-text-muted leading-relaxed font-sans font-light mb-12 tracking-wide space-y-4"
         >
           <p>
-            Propojuji vědomý dotek, sílu rostlin, medicinálních hub, redoxní technologie a celostní přístup, který jde do hloubky.
+            V mé péči se potkává vědomý a citlivý dotek se silou bylin, medicinálních hub a opravdu celostním přístupem, který jde do hloubky.
           </p>
           <p>
-            Nejde jen o masáž.<br />Je to prostor, kde můžete vypnout a znovu se nadechnout.<br />
-            <strong>Dopřejte si regeneraci, která má smysl.</strong>
+            Nečekejte jen obyčejnou masáž.<br />Vytvářím pro Vás bezpečný prostor, kde můžete na chvíli úplně vypnout, odložit starosti a znovu se zhluboka nadechnout.<br />
+            <strong>Dopřejte si péči a regeneraci, která má smysl.</strong>
           </p>
         </motion.div>
 

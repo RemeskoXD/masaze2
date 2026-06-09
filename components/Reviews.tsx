@@ -101,12 +101,12 @@ const Reviews: React.FC = () => {
           className="flex flex-col md:flex-row justify-between items-end mb-10"
         >
             <div>
-                <h2 className="text-3xl md:text-5xl font-serif text-gold-dark mb-2">Recenze klientů</h2>
-                <p className="text-text-muted">Vaše spokojenost je mou největší odměnou.</p>
+                <h2 className="text-3xl md:text-5xl font-serif text-gold-dark mb-2">Co o mně říkají klienti</h2>
+                <p className="text-text-muted mt-2">Největší odměnou je pro mě Váš úsměv, když odcházíte odpočatí a plní nové energie.<br className="hidden sm:block"/> Moc děkuji za každé Vaše slovo!</p>
             </div>
             <button 
                 onClick={() => setShowForm(!showForm)}
-                className="mt-4 md:mt-0 px-6 py-2 border border-gold text-gold-dark rounded hover:bg-gold hover:text-white transition cursor-pointer"
+                className="mt-6 md:mt-0 px-6 py-2 border border-gold text-gold-dark rounded hover:bg-gold hover:text-white transition cursor-pointer"
             >
                 {showForm ? 'Zavřít formulář' : 'Napsat recenzi'}
             </button>
