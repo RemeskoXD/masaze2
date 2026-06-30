@@ -16,7 +16,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
       setScrolled(window.scrollY > 50);
     };
     
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -24,12 +24,10 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
 
     window.addEventListener('scroll', handleScroll);
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
 
@@ -93,12 +91,10 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
           </div>
           <div className="-mr-2 flex lg:hidden">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsOpen(!isOpen);
-              }}
-              className="inline-flex items-center justify-center p-3 sm:p-2 rounded-xl focus:outline-none transition-colors text-text-dark hover:text-gold-dark active:bg-gold/20 bg-white/50 border border-gold/10 shadow-sm"
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-3 sm:p-2 rounded-xl focus:outline-none transition-colors text-text-dark hover:text-gold-dark active:bg-gold/20 bg-white/50 border border-gold/10 shadow-sm cursor-pointer relative z-50"
               aria-label="Menu"
+              aria-expanded={isOpen}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>

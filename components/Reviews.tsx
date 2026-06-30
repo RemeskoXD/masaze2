@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const MOCK_REVIEWS = [
   { id: 1, author: 'Jana', rating: 5, text: 'Masáže jsou skvělé, uvolňující, jak masáž těla, tak masáž hlavy a obličeje. Velice příjemná slečna masérka a krásné prostředí. Všem vřele doporučuji.', date: 'Ověřená recenze' },
-  { id: 2, author: 'Lukáš', rating: 5, text: 'MASÁŽ SKVĚLÁ, VÝBORNÁ, UVOLŇUJÍCÍ. SUPER RELAX A ODPOČINEK PO NÁROČNÉM DNI. ČLOVĚK ODCHÁZÍ PLN SKVĚLÉ ENERGIE.', date: 'Ověřená recenze' },
-  { id: 3, author: 'Karolína Petrová', rating: 5, text: 'A moooc děkujeme bylo to super jako vždy 😘 a já jsem úplně na jiné vlně kdybych nemusela teď zas řešit starosti tak bych byla víc úplně wauuuu❤️😊', date: 'Ověřená recenze' },
-  { id: 4, author: 'Stanislava (Slávka)', rating: 5, text: 'Masáže byly super, velice spokojena.', date: 'Ověřená recenze' },
-  { id: 5, author: 'Zuzka', rating: 5, text: 'Terezko, máš zlaté ruce ! :-) moc děkuji !', date: 'Ověřená recenze' },
-  { id: 6, author: 'Helena', rating: 5, text: 'Nejbáječnější masáž :-) Neskutečně moc děkuji', date: 'Ověřená recenze' },
-  { id: 7, author: 'Jindřiška (Jindra)', rating: 5, text: 'masáže jsou naprosto úžasné, příjemné, člověk se krásně zrelaxuje a hlavně jsou účinné.... chodím pravidelně každý týden a nelituju a budu chodit i nadále ♡ :-)', date: 'Ověřená recenze' },
+  { id: 2, author: 'Lukáš', rating: 5, text: 'Masáž skvělá, výborná, uvolňující. Super relax a odpočinek po náročném dni. Člověk odchází plný skvělé energie.', date: 'Ověřená recenze' },
+  { id: 3, author: 'Karolína', rating: 5, text: 'Moc děkujeme, bylo to super jako vždy! Jsem úplně na jiné vlně, úžasný relax.', date: 'Ověřená recenze' },
+  { id: 4, author: 'Stanislava', rating: 5, text: 'Masáže byly super, jsem velice spokojená.', date: 'Ověřená recenze' },
+  { id: 5, author: 'Zuzana', rating: 5, text: 'Terezko, máš zlaté ruce! Moc děkuji!', date: 'Ověřená recenze' },
+  { id: 6, author: 'Helena', rating: 5, text: 'Nejbáječnější masáž! Neskutečně moc děkuji.', date: 'Ověřená recenze' },
+  { id: 7, author: 'Jindřiška', rating: 5, text: 'Masáže jsou naprosto úžasné a příjemné, člověk se krásně zrelaxuje a hlavně jsou účinné. Chodím pravidelně každý týden, nelituji a budu chodit i nadále.', date: 'Ověřená recenze' },
 ];
 
 const Reviews: React.FC = () => {

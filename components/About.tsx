@@ -23,23 +23,15 @@ const About: React.FC = () => {
             
             <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light">
               <p>
-                Vítejte ve světě, kde se čas na chvíli zpomalí. Celý život mě přirozeně přitahuje to, co skutečně pomáhá a léčí – síla přírody, harmonizující frekvence hudby a vědomý, uzdravující dotek. Je to vášeň, která mi dává neuvěřitelnou vnitřní sílu, a tu s obrovskou radostí předávám dál.
+                Celý život mě přirozeně přitahuje to, co pomáhá. Nejen, že mě to baví, ale dává mi to hluboký smysl.
               </p>
               
               <p>
-                Mým cílem je pro Vás vytvořit <strong>bezpečný přístav uvolnění</strong> – místo, kde se jakýkoliv stres spolehlivě rozplyne do ztracena. K tomuto přístupu mě dovedly vlastní zkušenosti, kdy mi při řešení zdravotních obtíží chyběl prostor pro lidskost, opravdový zájem a hledání skutečných příčin namísto povrchního tlumení příznaků.
+                Po studiu psychologie, zahradnictví, Tradiční čínské medicíny, Akademie léčivých rostlin a medicinálních hub, muzikoterapie, masáží, zdravého životního stylu, využívám mé poznatky v každodenní praxi již přes 15 let s lidmi všech věkových kategorií. 
               </p>
 
               <p>
-                Proto vnímám člověka jako nesmírně dokonalý propojený celek. Intenzivně jsem se ponořila do studia psychologie, bylinkářství a mocných účinků medicinálních hub. Svůj přístup dnes pevně opírám o studium Tradiční čínské medicíny a letitou praxi v muzikoterapii i pokročilých masážních technikách.
-              </p>
-
-              <p className="font-medium text-text-dark text-xl pt-2">
-                Dávám do své práce celé srdce, maximum pozornosti a veškerou energii.
-              </p>
-
-              <p>
-                V malebném a tichém prostředí zámku v Načeradci Vás tak nečeká jen obyčejná masáž. Pokaždé se můžete těšit na <strong>špičkovou péči, absolutní respekt k Vašemu tělu a pozitivně laděnou energii</strong>, zaměřenou přesně na to, co právě nejvíce potřebujete.
+                Čeká Vás tedy kvalitní masáž, citlivý přístup k Vám a Vašemu zdraví v krásném prostředí na zámku v Načeradci. 
               </p>
 
               <div className="pt-4 pb-2">
