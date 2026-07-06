@@ -21,17 +21,17 @@ const About: React.FC = () => {
               O mně
             </h2>
             
-            <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light">
+            <div className="space-y-6 text-text-muted font-sans leading-relaxed text-lg font-light text-justify">
               <p>
                 Celý život mě přirozeně přitahuje to, co pomáhá. Nejen, že mě to baví, ale dává mi to hluboký smysl.
               </p>
               
               <p>
-                Po studiu psychologie, zahradnictví, Tradiční čínské medicíny, Akademie léčivých rostlin a medicinálních hub, muzikoterapie, masáží, zdravého životního stylu, využívám mé poznatky v každodenní praxi již přes 15 let s lidmi všech věkových kategorií. 
+                Po studiu psychologie, zahradnictví, Tradiční čínské medicíny, Akademie léčivých rostlin a&nbsp;medicinálních hub, muzikoterapie, masáží, zdravého životního stylu, využívám mé poznatky v&nbsp;každodenní praxi již přes 15 let s&nbsp;lidmi všech věkových kategorií. 
               </p>
 
               <p>
-                Čeká Vás tedy kvalitní masáž, citlivý přístup k Vám a Vašemu zdraví v krásném prostředí na zámku v Načeradci. 
+                Čeká Vás tedy kvalitní masáž, citlivý přístup k&nbsp;Vám a&nbsp;Vašemu zdraví v&nbsp;krásném prostředí na zámku v&nbsp;Načeradci. 
               </p>
 
               <div className="pt-4 pb-2">

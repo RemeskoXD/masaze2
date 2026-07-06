@@ -180,20 +180,27 @@ async function startServer() {
       // 2. Zpráva pro zákazníka - Jen informace o přijetí bez příliš slibů
       let qrCodeHtml = '';
       if (totalPrice && surnameClean && vs) {
-        const qrMsg = removeDiacritics(`Masaze ${surnameClean}`.slice(0, 60));
-        const qrData = `SPD*1.0*ACC:${IBAN}*AM:${totalPrice}.00*CC:CZK*X-VS:${vs}*MSG:${qrMsg}`.toUpperCase();
+        const depositPrice = totalPrice;
+        const qrMsg = removeDiacritics(`Zaloha Masaze ${surnameClean}`.slice(0, 60));
+        const qrData = `SPD*1.0*ACC:${IBAN}*AM:${depositPrice}.00*CC:CZK*X-VS:${vs}*MSG:${qrMsg}`.toUpperCase();
         const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
         qrCodeHtml = `
-          <div style="margin: 25px 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; max-width: 400px; font-family: sans-serif;">
-            <h4 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #1e293b; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Platba převodem</h4>
-            <div style="margin-bottom: 15px;">
-              <p style="margin: 0 0 5px 0; font-size: 24px; font-family: 'Georgia', serif; color: #1e293b;">${totalPrice} Kč</p>
+          <div style="margin: 25px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; max-width: 450px; font-family: sans-serif;">
+            <h4 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #1e293b; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Jak zálohu zaplatit?</h4>
+            <div style="margin-bottom: 20px; font-size: 14px; color: #475569;">
+              <ol style="margin-top: 0; padding-left: 20px; line-height: 1.6;">
+                <li style="margin-bottom: 8px;">Otevřete si v mobilu aplikaci Vaší banky (tzv. mobilní bankovnictví).</li>
+                <li style="margin-bottom: 8px;">Zvolte možnost "Platba QR kódem" (nebo ikonku fotoaparátu).</li>
+                <li>Namiřte fotoaparát na tento QR kód (černobílý čtverec) a údaje se samy vyplní. Pak jen platbu potvrďte.</li>
+              </ol>
+            </div>
+            <img src="${qrImageUrl}" alt="QR Platba" width="160" height="160" style="display: block; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; background-color: white; margin-bottom: 15px;" />
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">Nebo můžete zadat údaje ručně:</p>
+              <p style="margin: 0 0 5px 0; font-size: 20px; font-family: 'Georgia', serif; color: #1e293b;">Záloha: ${depositPrice} Kč</p>
               <p style="margin: 0; font-size: 14px; color: #64748b;">Číslo účtu: <strong>${BANK_ACCOUNT}</strong> (${BANK_NAME})</p>
               <p style="margin: 5px 0 0 0; font-size: 14px; color: #64748b;">Variabilní symbol: <strong>${vs}</strong></p>
             </div>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Naskenujte kód ve Vaší mobilní bankovní aplikaci pro okamžité vyplnění platebních údajů.</p>
-            <img src="${qrImageUrl}" alt="QR Platba" width="160" height="160" style="display: block; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; background-color: white; margin-bottom: 8px;" />
-            <p style="font-size: 12px; color: #94a3b8; font-style: italic; margin: 0;">Při platbě přes QR kód se údaje vyplní automaticky.</p>
           </div>
         `;
       }
@@ -201,13 +208,19 @@ async function startServer() {
       const customerMailOptions = {
         from: `"Tereza Rozkošná" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: 'Vaše žádost o rezervaci byla přijata',
+        subject: 'Vaše žádost o rezervaci byla přijata - Pokyny k platbě zálohy',
         html: `
           <h3>Dobrý den, ${customerName},</h3>
           <p>Děkuji Vám za zájem. Vaše žádost o rezervaci byla úspěšně přijata.</p>
-          <p>Zatím se jedná pouze o požadavek. <strong>Termín Vám ještě závazně potvrdím v dalším e-mailu.</strong> <br/><span style="font-size: 12px; color: #666;">(Zkontrolujte si prosím i složku Hromadné nebo SPAM)</span></p>
           <p><strong>Zvolený termín:</strong> ${date} v ${time}</p>
+          <p><strong>Pro potvrzení termínu je potřeba uhradit zálohu ve výši 100 %.</strong></p>
+          <p>Zálohu prosím uhrad'te <strong>nejpozději 24 hodin</strong> před domluveným termínem. Teprve po zaplacení zálohy je Váš termín platný.</p>
           ${qrCodeHtml}
+          <div style="background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 15px; margin: 25px 0; border-radius: 4px;">
+            <p style="margin-top: 0; font-weight: bold; color: #334155;">Storno podmínky a zrušení termínu</p>
+            <p style="margin-bottom: 0; color: #475569; font-size: 14px; line-height: 1.5;">Pokud potřebujete termín zrušit nebo přesunout, dejte mi prosím vědět <strong>nejpozději 24 hodin předem</strong> – v takovém případě Vám zálohu v plné výši vrátím. Při pozdějším zrušení bohužel záloha propadá, pokud se spolu nedomluvíme jinak.</p>
+          </div>
+          <p>Poté, co platbu přijmu (případně schválím termín), Vám zašlu finální potvrzení.</p>
           <p>V případě potřeby mě neváhejte kontaktovat na telefonu: <strong>${PHONE_NUMBER}</strong>.</p>
           <hr />
           <p>S pozdravem,</p>

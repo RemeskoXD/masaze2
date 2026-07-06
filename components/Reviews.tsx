@@ -6,10 +6,11 @@ const MOCK_REVIEWS = [
   { id: 1, author: 'Jana', rating: 5, text: 'Masáže jsou skvělé, uvolňující, jak masáž těla, tak masáž hlavy a obličeje. Velice příjemná slečna masérka a krásné prostředí. Všem vřele doporučuji.', date: 'Ověřená recenze' },
   { id: 2, author: 'Lukáš', rating: 5, text: 'Masáž skvělá, výborná, uvolňující. Super relax a odpočinek po náročném dni. Člověk odchází plný skvělé energie.', date: 'Ověřená recenze' },
   { id: 3, author: 'Karolína', rating: 5, text: 'Moc děkujeme, bylo to super jako vždy! Jsem úplně na jiné vlně, úžasný relax.', date: 'Ověřená recenze' },
-  { id: 4, author: 'Stanislava', rating: 5, text: 'Masáže byly super, jsem velice spokojená.', date: 'Ověřená recenze' },
+  { id: 4, author: 'Hanča', rating: 5, text: 'Masáže byly super, jsem velice spokojená.', date: 'Ověřená recenze' },
   { id: 5, author: 'Zuzana', rating: 5, text: 'Terezko, máš zlaté ruce! Moc děkuji!', date: 'Ověřená recenze' },
   { id: 6, author: 'Helena', rating: 5, text: 'Nejbáječnější masáž! Neskutečně moc děkuji.', date: 'Ověřená recenze' },
-  { id: 7, author: 'Jindřiška', rating: 5, text: 'Masáže jsou naprosto úžasné a příjemné, člověk se krásně zrelaxuje a hlavně jsou účinné. Chodím pravidelně každý týden, nelituji a budu chodit i nadále.', date: 'Ověřená recenze' },
+  { id: 8, author: 'Míša', rating: 5, text: 'Na masáže k Terce chodím pravidelně a naprostá spokojenost. Velice příjemný a ochotný přístup. Masáž bomba. Všem moc doporučuji. Cítím se vždy o nějaké to kg lehčí 🙂 Moc děkuji 🙂', date: 'Ověřená recenze' },
+  { id: 9, author: 'Lenka', rating: 5, text: 'U Terky jsem byla dnes poprvé a rozhodně ne naposled! Příjemné, uvolňující, skvělý relax. Budu se těšit na příště. Děkuji Teri.', date: 'Ověřená recenze' },
 ];
 
 const Reviews: React.FC = () => {

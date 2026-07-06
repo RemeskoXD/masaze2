@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const ReservationSystem: React.FC = () => {
   const [step, setStep] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState<string | 'vse'>('vse');
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -298,7 +299,8 @@ const ReservationSystem: React.FC = () => {
       return `CZ${checkDigits}${bban}`;
     };
 
-    const spaydString = `SPD*1.0*ACC:${getIban()}*AM:${totalPrice}.00*CC:CZK*X-VS:${vs}*MSG:Masaze ${surnameClean}`.toUpperCase();
+    const depositPrice = totalPrice;
+    const spaydString = `SPD*1.0*ACC:${getIban()}*AM:${depositPrice}.00*CC:CZK*X-VS:${vs}*MSG:Zaloha Masaze ${surnameClean}`.toUpperCase();
 
     return (
       <div className="py-32 bg-beige-bg flex items-center justify-center px-4 relative overflow-hidden">
@@ -317,23 +319,51 @@ const ReservationSystem: React.FC = () => {
             >
                 <CheckCircle size={40} className="text-gold-dark" strokeWidth={1.5} />
             </motion.div>
-            <h3 className="text-3xl md:text-4xl text-text-dark font-serif mb-4">Rezervace odeslána</h3>
-            <p className="text-text-muted mb-8 font-light leading-relaxed max-w-lg mx-auto">
-                Děkuji, <strong className="font-medium text-text-dark">{formData.name}</strong>. Vaše žádost o termín <br/>
-                <strong className="font-medium text-text-dark">{new Date(selectedDate!).toLocaleDateString('cs-CZ')} v {selectedTime}</strong> byla úspěšně přijata.
-                <br /><br />
-                <span className="text-sm text-gold-dark uppercase tracking-widest font-medium">Vyčkejte prosím na potvrzení.<br/><span className="text-xs normal-case tracking-normal opacity-80">(Zkontrolujte si prosím i složku Hromadné nebo SPAM)</span></span>
-            </p>
+            <h3 className="text-3xl md:text-4xl text-text-dark font-serif mb-4">Rezervace přijata</h3>
             
-            <div className="bg-beige-bg/50 border border-gold/10 p-6 rounded-2xl mb-8 flex flex-col items-center">
-                <h4 className="text-sm uppercase tracking-widest font-medium text-text-dark mb-4">Platba převodem</h4>
-                <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
-                    <QRCodeSVG value={spaydString} size={160} level="M" />
+            <p className="text-text-muted mb-8 font-light leading-relaxed max-w-xl mx-auto">
+                Děkuji, <strong className="font-medium text-text-dark">{formData.name}</strong>. Vaše žádost o termín <strong className="font-medium text-text-dark">{new Date(selectedDate!).toLocaleDateString('cs-CZ')} v {selectedTime}</strong> byla úspěšně přijata.
+                <br /><br />
+                <strong className="text-gold-dark text-lg font-medium">Pro potvrzení termínu je potřeba uhradit zálohu ve výši 100 %.</strong><br/>
+                <span className="text-sm">Zálohu prosím uhrad'te <strong>nejpozději 24 hodin</strong> před domluveným termínem. Teprve po zaplacení zálohy je Váš termín platný.</span>
+                <br /><br />
+                <span className="text-sm text-text-muted opacity-80">(Potvrzení a tyto pokyny Vám za chvíli dorazí i na e-mail. Zkontrolujte si prosím i složku Hromadné nebo SPAM.)</span>
+            </p>
+
+            <div className="bg-white border border-gold/20 p-5 rounded-xl mb-8 text-left max-w-xl mx-auto shadow-sm">
+                <p className="font-medium text-text-dark text-sm mb-1">Storno podmínky a zrušení termínu</p>
+                <p className="text-sm text-text-muted font-light leading-relaxed">Pokud potřebujete termín zrušit nebo přesunout, dejte mi prosím vědět <strong>nejpozději 24 hodin předem</strong> – v takovém případě Vám zálohu v plné výši vrátím. Při pozdějším zrušení bohužel záloha propadá, pokud se spolu nedomluvíme jinak.</p>
+            </div>
+            
+            <div className="bg-beige-bg/50 border border-gold/10 p-6 md:p-8 rounded-2xl mb-8 flex flex-col items-center text-left">
+                <h4 className="text-sm uppercase tracking-widest font-medium text-text-dark mb-6 text-center w-full">Jak zálohu zaplatit?</h4>
+                <div className="w-full max-w-sm mb-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-gold/20 text-gold-dark flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">1</div>
+                    <p className="text-sm text-text-muted">Otevřete si v mobilu aplikaci Vaší banky (tzv. mobilní bankovnictví).</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-gold/20 text-gold-dark flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">2</div>
+                    <p className="text-sm text-text-muted">Zvolte možnost <strong>"Platba QR kódem"</strong> (často ikonka fotoaparátu).</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-gold/20 text-gold-dark flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">3</div>
+                    <p className="text-sm text-text-muted">Namiřte fotoaparát na tento černobílý čtverec a údaje se samy vyplní. Pak jen platbu potvrďte.</p>
+                  </div>
                 </div>
-                <p className="text-2xl font-serif text-text-dark mb-1">{totalPrice} Kč</p>
-                <p className="text-sm text-text-muted font-light mb-2">Číslo účtu: <strong className="font-medium text-text-dark">3190751019/3030</strong> (Air Bank)</p>
-                <p className="text-sm text-text-muted font-light mb-2">Variabilní symbol: <strong className="font-medium text-text-dark">{vs}</strong></p>
-                <p className="text-xs text-text-muted italic">Při platbě přes QR kód se údaje vyplní automaticky.</p>
+
+                <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex justify-center">
+                    <QRCodeSVG value={spaydString} size={180} level="M" />
+                </div>
+                
+                <div className="w-full text-center">
+                  <p className="text-3xl font-serif text-text-dark mb-4 text-center">Záloha: {depositPrice} Kč</p>
+                  <div className="w-full h-px bg-gold/20 my-5"></div>
+                  <p className="text-sm text-text-muted font-medium mb-3 text-center">Nebo můžete zadat údaje ručně:</p>
+                  <p className="text-sm text-text-muted font-light mb-2 text-center">Číslo účtu: <strong className="font-medium text-text-dark">3190751019/3030</strong> (Air Bank)</p>
+                  <p className="text-sm text-text-muted font-light mb-2 text-center">Variabilní symbol: <strong className="font-medium text-text-dark">{vs}</strong></p>
+                  <p className="text-sm text-text-muted font-light mb-2 text-center">Částka k úhradě: <strong className="font-medium text-text-dark">{depositPrice} Kč</strong></p>
+                </div>
             </div>
 
             <button 
@@ -416,7 +446,7 @@ const ReservationSystem: React.FC = () => {
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                     >
-                        <div className="flex justify-between items-end mb-8">
+                        <div className="flex justify-between items-end mb-6">
                             <h3 className="text-3xl text-text-dark font-serif">
                                 Zvolte proceduru
                             </h3>
@@ -424,8 +454,31 @@ const ReservationSystem: React.FC = () => {
                                 <Gift size={14} /> Bonus překvapení ke každé rezervaci
                             </div>
                         </div>
+
+                        <div className="flex flex-wrap gap-2 mb-8">
+                            {[
+                                { id: 'vse', name: 'Vše' },
+                                { id: 'uvolneni', name: 'Uvolnění a regenerace' },
+                                { id: 'krasa', name: 'Krása a péče' },
+                                { id: 'jemna', name: 'Jemná péče' },
+                                { id: 'specialni', name: 'Zvýhodněné balíčky' }
+                            ].map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategory(cat.id)}
+                                    className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-widest transition-all duration-300 border ${
+                                        selectedCategory === cat.id
+                                        ? 'bg-gold text-white border-gold shadow-md'
+                                        : 'bg-white text-text-muted border-gold/20 hover:border-gold/60 hover:text-gold-dark'
+                                    }`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
+                        </div>
+
                         <div className="grid grid-cols-1 gap-4">
-                            {SERVICES_LIST.filter(s => s.id !== 12 && s.id !== 13).map((service) => {
+                            {SERVICES_LIST.filter(s => s.id !== 12 && s.id !== 13 && (selectedCategory === 'vse' || s.category === selectedCategory)).map((service) => {
                                 const isSelected = selectedService === service.id;
                                 // Fake "original" price logic + 50 CZK
                                 const numericPriceMatch = service.price.match(/\d+/);
