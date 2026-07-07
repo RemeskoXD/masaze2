@@ -4,6 +4,12 @@ import { Clock, Star, Info, AlertTriangle, Leaf, Sparkles, Gift, Check } from 'l
 import { motion } from 'motion/react';
 
 const Services: React.FC = () => {
+  const handleOrderClick = (e: React.MouseEvent<HTMLAnchorElement>, serviceId: number) => {
+    // Only dispatch event and jump, don't prevent default hash navigation
+    const event = new CustomEvent('selectServiceEvent', { detail: { serviceId } });
+    window.dispatchEvent(event);
+  };
+
   return (
     <section id="services" className="py-24 bg-beige-dark relative overflow-hidden">
       {/* Decorative background element */}
@@ -26,9 +32,6 @@ const Services: React.FC = () => {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-text-dark mb-8 leading-tight italic">
             "Dopřejte si péči, která uvolní Vaše tělo i mysl a přinese Vám skutečný pocit klidu."
           </h2>
-          <p className="text-text-muted max-w-2xl mx-auto font-light text-lg mb-4">
-            Každá masáž je hluboký rituál ušitý na míru Vašim potřebám. Protože věřím, že pravidelná péče o tělo a mysl je tou nejlepší investicí, mám pro Vás <strong>jedinečnou odměnu</strong>. Jakmile se stanete mým stálým klientem (už po 5. návštěvě), otevírá se Vám svět <strong>exkluzivních výhod</strong> – od <strong>výrazných slev na další masáže</strong> až po <strong>luxusní procedury navíc zcela ZDARMA</strong>. Vaše oddanost vlastnímu zdraví si zaslouží tu nejlepší péči.
-          </p>
           
           <div className="inline-flex flex-col sm:flex-row items-center justify-center gap-3 bg-gold/5 border border-gold/20 px-6 py-4 rounded-2xl mx-auto mt-6">
              <div className="flex bg-white p-2 rounded-full shadow-sm text-gold">
@@ -76,7 +79,7 @@ const Services: React.FC = () => {
                     
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
                         <p className="text-text-muted leading-relaxed max-w-md font-light">{service.description}</p>
-                        <a href="#reservation" className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
+                        <a href="#reservation" onClick={(e) => handleOrderClick(e, service.id)} className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
                             Objednat
                         </a>
                     </div>
@@ -119,7 +122,7 @@ const Services: React.FC = () => {
                     
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
                         <p className="text-text-muted leading-relaxed max-w-md font-light">{service.description}</p>
-                        <a href="#reservation" className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
+                        <a href="#reservation" onClick={(e) => handleOrderClick(e, service.id)} className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
                             Objednat
                         </a>
                     </div>
@@ -162,7 +165,7 @@ const Services: React.FC = () => {
                     
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
                         <p className="text-text-muted leading-relaxed max-w-md font-light">{service.description}</p>
-                        <a href="#reservation" className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
+                        <a href="#reservation" onClick={(e) => handleOrderClick(e, service.id)} className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
                             Objednat
                         </a>
                     </div>
@@ -209,7 +212,7 @@ const Services: React.FC = () => {
                   
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
                       <p className="text-text-muted leading-relaxed max-w-md font-light">{service.description}</p>
-                      <a href="#reservation" className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
+                      <a href="#reservation" onClick={(e) => handleOrderClick(e, service.id)} className="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-gold/50 text-gold-dark text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gold hover:text-white hover:border-gold transition-all rounded-full whitespace-nowrap">
                           Objednat
                       </a>
                   </div>

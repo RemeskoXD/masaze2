@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-beige-bg: #FDFBF7;
+  --color-beige-dark: #F5F2ED;
+  --color-gold: #C5A880;
+  --color-gold-light: #E6D5C3;
+  --color-gold-dark: #8C7355;
+  --color-text-dark: #1A1A1A;
+  --color-text-muted: #666666;
+  --color-deep-green: #1A2F24;
+  --color-soft-white: #FAFAFA;
+  
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Montserrat", sans-serif;
+
+  --animate-slow-zoom: zoom 20s infinite alternate;
+  --animate-fade-in-up: fadeInUp 1s ease-out forwards;
+
+  @keyframes zoom {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+  }
+
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+body {
+  background-color: var(--color-beige-bg);
+  color: var(--color-text-dark);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(to right, #f3e5ab, #d4af37, #f3e5ab);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: shine 5s linear infinite;
+}
+
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--color-beige-dark); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d4af37, #aa8c2c);
+  border-radius: 5px;
+  border: 2px solid var(--color-beige-dark);
+}

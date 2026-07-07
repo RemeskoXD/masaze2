@@ -16,7 +16,8 @@ const ReservationSystem: React.FC = () => {
     name: '',
     email: '',
     phone: '',
-    note: ''
+    note: '',
+    website: '' // Honeypot field
   });
   const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +50,25 @@ const ReservationSystem: React.FC = () => {
          }
      };
      fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const handleSelectService = (e: Event) => {
+      const customEvent = e as CustomEvent<{ serviceId: number }>;
+      setSelectedService(customEvent.detail.serviceId);
+      
+      const service = SERVICES_LIST.find(s => s.id === customEvent.detail.serviceId);
+      if (service && service.category !== 'specialni') {
+        setSelectedCategory(service.category);
+      } else {
+        setSelectedCategory('vse');
+      }
+
+      setStep(1);
+    };
+
+    window.addEventListener('selectServiceEvent', handleSelectService);
+    return () => window.removeEventListener('selectServiceEvent', handleSelectService);
   }, []);
 
   const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
@@ -215,6 +235,7 @@ const ReservationSystem: React.FC = () => {
         email: sanitize(formData.email),
         phone: sanitize(formData.phone),
         note: finalNote,
+        website: formData.website, // Send honeypot value to backend
         totalPrice,
         surnameClean,
         vs
@@ -724,6 +745,20 @@ const ReservationSystem: React.FC = () => {
                                 <label htmlFor="email" className="absolute left-0 top-3 text-text-muted/70 text-sm transition-all peer-focus:-top-4 peer-focus:text-xs peer-focus:text-gold peer-valid:-top-4 peer-valid:text-xs peer-valid:text-gold cursor-text">
                                     E-mailová adresa
                                 </label>
+                            </div>
+
+                            {/* Honeypot field (hidden from real users) */}
+                            <div className="hidden" aria-hidden="true" style={{ display: 'none' }}>
+                                <label htmlFor="website">Website</label>
+                                <input
+                                    type="text"
+                                    id="website"
+                                    name="website"
+                                    value={formData.website}
+                                    onChange={e => setFormData({...formData, website: e.target.value})}
+                                    tabIndex={-1}
+                                    autoComplete="off"
+                                />
                             </div>
 
                             <div className="relative group pt-2">

@@ -136,7 +136,13 @@ async function startServer() {
 
   app.post('/api/reservation', async (req, res) => {
     try {
-      const { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs } = req.body;
+      const { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs, website } = req.body;
+
+      // Honeypot check for spam bots
+      if (website) {
+        console.warn('Spam bot detected via honeypot field');
+        return res.status(400).json({ success: false, message: 'Spam detected' });
+      }
 
       if (!serviceId || !date || !time || !customerName || !phone || !email) {
         return res.status(400).json({ success: false, message: 'Chybí povinné údaje' });

@@ -34,12 +34,12 @@ const About: React.FC = () => {
                 Čeká Vás tedy kvalitní masáž, citlivý přístup k&nbsp;Vám a&nbsp;Vašemu zdraví v&nbsp;krásném prostředí na zámku v&nbsp;Načeradci. 
               </p>
 
-              <div className="pt-4 pb-2">
+              <div className="pt-4 pb-2 flex justify-center md:justify-start">
                 <a 
                   href="https://docs.google.com/forms/d/12ojtmka1yFvwILGbfWLZmUhUskdT0shqH_wil_mMilA/viewform" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-8 py-4 bg-gold text-white font-sans font-medium uppercase tracking-widest text-sm rounded transition-all duration-300 hover:bg-gold-dark hover:shadow-lg"
+                  className="inline-flex items-center justify-center px-8 py-4 bg-gold text-white font-sans font-medium uppercase tracking-widest text-sm rounded transition-all duration-300 hover:bg-gold-dark hover:shadow-lg text-center"
                 >
                   Vyplnit dotazník ke konzultaci
                 </a>

@@ -10,13 +10,25 @@ import Reviews from './components/Reviews';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import FloatingContact from './components/FloatingContact';
+import CookieBanner from './components/CookieBanner';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
+import CookiesPolicy from './components/CookiesPolicy';
+import NotFound from './components/NotFound';
 import { IMAGES } from './constants';
 
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [clientSectionEnabled, setClientSectionEnabled] = useState(false);
+  const [isNotFound, setIsNotFound] = useState(false);
 
   useEffect(() => {
+    // Check for 404
+    if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+      setIsNotFound(true);
+      return;
+    }
+
     // If the page is loaded/reloaded with #admin, silently clean the hash
     // to prevent unwanted redirects to admin panel on rebuilds/reloads.
     if (window.location.hash === '#admin') {
@@ -47,6 +59,10 @@ const App: React.FC = () => {
 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  if (isNotFound) {
+    return <NotFound />;
+  }
 
   if (isAdmin) {
     return <AdminPanel />;
@@ -103,6 +119,11 @@ const App: React.FC = () => {
       
       {/* Floating Admin Link for Demo Purposes */}
       <a href="#admin" className="fixed bottom-2 right-2 text-[10px] text-gray-700 hover:text-gold opacity-50 z-10">Admin</a>
+      
+      <CookieBanner />
+      <PrivacyPolicy />
+      <TermsAndConditions />
+      <CookiesPolicy />
     </div>
   );
 };

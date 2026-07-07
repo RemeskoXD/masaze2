@@ -53,7 +53,7 @@ export const SERVICES_LIST = [
     id: 3,
     title: "Liftingová masáž obličeje a Gua Sha",
     description: "Omlazující masáž obličeje pomocí tradiční techniky Gua Sha pro prokrvení a vypnutí pleti.",
-    price: "900 Kč",
+    price: "1000 Kč",
     duration: "60 min",
     category: "krasa"
   },
@@ -85,7 +85,7 @@ export const SERVICES_LIST = [
     id: 6,
     title: "Maderoterapie (tvarování postavy a lymfa)",
     description: "Masáž stimulující lymfatický systém. Pomáhá tvarovat postavu, redukovat celulitidu pomocí speciálních technik a dřevěných nástrojů.",
-    price: "900 Kč",
+    price: "1000 Kč",
     duration: "60 min",
     category: "krasa"
   },
@@ -117,7 +117,7 @@ export const SERVICES_LIST = [
     id: 10,
     title: "Maderoterapie & Gua Sha (Okamžitá LEHKOST těla i tváře)",
     description: "Okamžitá LEHKOST těla i tváře. Silná kombinace maderoterapie a masáže Gua Sha, která nastartuje tělo i pleť: viditelné tvarování, lifting, aktivace lymfy, odvod přebytečné vody, ruční lymfomodeling, masáž dřevěnými prvky a jadeitovými destičkami pro štíhlejší kontury a redukci otoků.",
-    price: "1700 Kč",
+    price: "1900 Kč",
     duration: "120 min",
     category: "specialni"
   },

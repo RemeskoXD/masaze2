@@ -46,6 +46,42 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
     { name: 'Zvýhodněné balíčky', href: '#specialni' },
   ];
 
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Only handle hash links that point to an ID on the same page
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      
+      // Update URL without jumping immediately
+      window.history.pushState(null, '', href);
+      
+      // Close menu first
+      setIsOpen(false);
+      
+      const targetId = href.substring(1);
+      
+      const doScroll = () => {
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+          // Add offset for the fixed header
+          const headerOffset = 100;
+          const elementPosition = targetElement.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.scrollY - headerOffset;
+    
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      };
+      
+      // Execute immediately for desktop/fast devices
+      doScroll();
+      
+      // Execute after menu animation for mobile Safari robustness
+      setTimeout(doScroll, 350);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ y: -100 }}
@@ -73,6 +109,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                 <div key={link.name} className="relative group">
                   <a
                     href={link.href}
+                    onClick={(e) => scrollToSection(e, link.href)}
                     className="transition-colors duration-300 px-3 py-2 rounded-full text-[10px] xl:text-xs font-semibold uppercase tracking-[0.1em] xl:tracking-[0.15em] text-text-dark hover:text-gold-dark hover:bg-gold/10 whitespace-nowrap inline-flex items-center gap-1"
                   >
                     {link.name}
@@ -85,6 +122,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                           <a
                             key={cat.name}
                             href={cat.href}
+                            onClick={(e) => scrollToSection(e, cat.href)}
                             className="text-text-muted hover:text-gold-dark hover:bg-gold/5 block px-4 py-2 rounded-xl text-[10px] xl:text-xs font-semibold text-center transition-colors uppercase tracking-widest whitespace-nowrap"
                           >
                             {cat.name}
@@ -98,6 +136,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
               <div className="flex items-center space-x-2 pl-2 border-l border-gold/20">
                   <a
                     href="#vouchers"
+                    onClick={(e) => scrollToSection(e, '#vouchers')}
                     className="transition-colors duration-300 px-4 py-2 bg-gold text-white rounded-full text-[10px] xl:text-xs font-semibold uppercase tracking-[0.1em] hover:bg-gold-dark hover:shadow-lg whitespace-nowrap"
                   >
                     Dárkové poukazy
@@ -105,6 +144,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                   {clientSectionEnabled && (
                   <a
                     href="#client-area"
+                    onClick={(e) => scrollToSection(e, '#client-area')}
                     className="transition-colors duration-300 px-3 py-2 border border-gold/40 text-gold-dark rounded-full text-[10px] xl:text-xs font-semibold uppercase tracking-[0.1em] hover:bg-gold/5 whitespace-nowrap"
                   >
                     Klientská sekce
@@ -140,7 +180,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                   <React.Fragment key={link.name}>
                     <a
                       href={link.href}
-                      onClick={() => setIsOpen(false)}
+                      onClick={(e) => scrollToSection(e, link.href)}
                       className="text-text-muted hover:text-gold-dark hover:bg-gold/5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-colors uppercase tracking-widest"
                     >
                       {link.name}
@@ -152,7 +192,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                           <a
                             key={cat.name}
                             href={cat.href}
-                            onClick={() => setIsOpen(false)}
+                            onClick={(e) => scrollToSection(e, cat.href)}
                             className="text-gold-dark hover:text-text-dark text-xs font-medium text-center transition-colors uppercase tracking-wider py-1.5 px-4 w-full"
                           >
                             {cat.name}
@@ -165,7 +205,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                 <div className="h-px w-full bg-gold/10 my-2"></div>
                 <a
                     href="#vouchers"
-                    onClick={() => setIsOpen(false)}
+                    onClick={(e) => scrollToSection(e, '#vouchers')}
                     className="text-white hover:bg-gold-dark bg-gold block px-4 py-3 mx-2 rounded-xl text-sm font-medium text-center transition-colors uppercase tracking-widest shadow-md"
                 >
                     Dárkové poukazy
@@ -173,7 +213,7 @@ const Navigation: React.FC<NavigationProps> = ({ clientSectionEnabled = false })
                 {clientSectionEnabled && (
                 <a
                     href="#client-area"
-                    onClick={() => setIsOpen(false)}
+                    onClick={(e) => scrollToSection(e, '#client-area')}
                     className="text-gold-dark hover:bg-gold/5 border border-gold/30 block px-4 py-3 mx-2 rounded-xl text-sm font-medium text-center transition-colors uppercase tracking-widest mt-2"
                 >
                     Klientská sekce

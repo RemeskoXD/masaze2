@@ -102,9 +102,22 @@ const Footer: React.FC = () => {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="border-t border-gold/10 mt-12 pt-8 text-center text-sm text-text-muted"
+          className="border-t border-gold/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center text-sm text-text-muted"
         >
-          <p>&copy; {new Date().getFullYear()} Tereza Rozkošná. Všechna práva vyhrazena.</p>
+          <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6">
+            <p>&copy; {new Date().getFullYear()} Tereza Rozkošná. Všechna práva vyhrazena.</p>
+            <div className="flex items-center gap-4 text-xs">
+              <a href="#terms" className="hover:text-gold transition-colors">Obchodní podmínky</a>
+              <a href="#privacy" className="hover:text-gold transition-colors">GDPR</a>
+              <a href="#cookies" className="hover:text-gold transition-colors">Cookies</a>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span>Vytvořil s láskou:</span>
+            <a href="https://mescon.cz" target="_blank" rel="noreferrer" className="flex items-center">
+              <img src="https://web2.itnahodinu.cz/mescon/images/logo.svg" alt="Mescon Logo" className="h-6 brightness-0 hover:brightness-100 transition-all duration-300" />
+            </a>
+          </div>
         </motion.div>
       </div>
     </footer>
