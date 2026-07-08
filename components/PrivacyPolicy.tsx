@@ -51,7 +51,7 @@ const PrivacyPolicy: React.FC = () => {
               
               <section>
                 <h3 className="text-xl font-medium font-serif text-gold-dark mb-3">2. Správce osobních údajů</h3>
-                <p>Správcem osobních údajů je Tereza Rozkošná, IČO: 12345678 (příklad), se sídlem Zámek Načeradec 1, 257 08 Načeradec. Kontaktní e-mail: celkovezdravi@gmail.com.</p>
+                <p>Správcem osobních údajů je Tereza Rozkošná, IČO: 12345678 (příklad), se sídlem Zámek Načeradec 1, 257 08 Načeradec. Kontaktní e-mail: zameckemasaze@seznam.cz.</p>
               </section>
               
               <section>
