@@ -102,7 +102,7 @@ async function startServer() {
   // Basic admin authentication middleware for /api/admin/* routes
   const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (token === process.env.ADMIN_TOKEN) {
+    if (token === (process.env.ADMIN_TOKEN || 'Terezka2026.!')) {
       next();
     } else {
       res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -113,7 +113,7 @@ async function startServer() {
   // --- REVIEWS API ---
   app.get('/api/reviews', async (req, res) => {
     try {
-      const [rows] = await pool.query('SELECT * FROM reviews ORDER BY id DESC');
+      const [rows]: any = await pool.query('SELECT * FROM reviews ORDER BY id DESC');
       res.json(rows);
     } catch (e) {
       res.status(500).json({ error: 'DB error' });
@@ -151,8 +151,8 @@ async function startServer() {
 
   app.get('/api/settings', async (req, res) => {
     try {
-      const [rows] = await pool.query('SELECT setting_key, setting_value FROM settings');
-      const settings = rows.reduce((acc, row) => ({ ...acc, [row.setting_key]: row.setting_value }), { clientSectionEnabled: false });
+      const [rows]: any = await pool.query('SELECT setting_key, setting_value FROM settings');
+      const settings = Array.isArray(rows) ? rows.reduce((acc: any, row: any) => ({ ...acc, [row.setting_key]: row.setting_value }), { clientSectionEnabled: false }) : { clientSectionEnabled: false };
       res.json(settings);
     } catch (e) {
       console.error(e);
@@ -163,6 +163,7 @@ async function startServer() {
   app.post('/api/reservation', async (req, res) => {
     try {
       let { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs, website } = req.body;
+      totalPrice = Math.max(0, Number(totalPrice) || 0);
       customerName = String(customerName || '').substring(0, 100).trim();
       phone = String(phone || '').substring(0, 50).trim();
       email = String(email || '').substring(0, 100).trim();
@@ -308,7 +309,8 @@ async function startServer() {
 
   app.post('/api/voucher', async (req, res) => {
     try {
-      const { type, value, service, recipientName, senderName, email, note } = req.body;
+      let { type, value, service, recipientName, senderName, email, note } = req.body;
+      value = Math.max(0, Number(value) || 0);
 
       if (!recipientName || !senderName || !email) {
         return res.status(400).json({ success: false, message: 'Chybí povinné údaje' });
@@ -410,8 +412,8 @@ async function startServer() {
   
   app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === 'admin123') { // heslo natvrdo pro demonstraci
-      res.json({ success: true, token: 'admin123' });
+    if (password === (process.env.ADMIN_TOKEN || 'Terezka2026.!')) {
+      res.json({ success: true, token: process.env.ADMIN_TOKEN || 'Terezka2026.!' });
     } else {
       res.json({ success: false });
     }

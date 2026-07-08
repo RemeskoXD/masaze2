@@ -97,7 +97,7 @@ async function runE2ETests() {
     const res = await fetch(`${BASE_URL}/api/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: 'admin123' })
+      body: JSON.stringify({ password: 'Terezka2026.!' })
     });
     if (res.ok) {
       const data = await res.json();
@@ -126,7 +126,7 @@ async function runE2ETests() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin123'
+          'Authorization': 'Bearer Terezka2026.!'
         },
         body: JSON.stringify({ status: 'confirmed' })
       });
