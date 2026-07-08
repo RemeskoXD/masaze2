@@ -5,7 +5,6 @@ import { createServer as createViteServer } from 'vite';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
-import mysql from 'mysql2/promise';
 
 dotenv.config();
 
@@ -67,26 +66,45 @@ function getPriceForService(serviceName: string): number {
   return 0;
 }
 
+// --- Simple Local Database ---
+const DB_FILE = path.join(process.cwd(), 'db.json');
 
-// --- MySQL Database ---
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+async function getDB() {
+  try {
+    const data = await fs.readFile(DB_FILE, 'utf-8');
+    const db = JSON.parse(data);
+    if (!db.vouchers) {
+      db.vouchers = [];
+    }
+    if (!db.reservations) {
+      db.reservations = [];
+    }
+    return db;
+  } catch (error) {
+    // If file doesn't exist, return default structure
+    return {
+      settings: {
+        clientSectionEnabled: false,
+      },
+      reservations: [],
+      vouchers: []
+    };
+  }
+}
 
+async function saveDB(data: any) {
+  await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+// Ensure DB exists on startup
+getDB().then(saveDB);
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(cors());
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: '10mb' }));
 
   // Configure Nodemailer transporter
   const transporter = nodemailer.createTransport({
@@ -102,71 +120,23 @@ async function startServer() {
   // Basic admin authentication middleware for /api/admin/* routes
   const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (token === process.env.ADMIN_TOKEN) {
+    if (token === 'admin123') { // in real world, use secure token/password logic
       next();
     } else {
       res.status(401).json({ success: false, message: 'Unauthorized' });
     }
   };
 
-  
-  // --- REVIEWS API ---
-  app.get('/api/reviews', async (req, res) => {
-    try {
-      const [rows] = await pool.query('SELECT * FROM reviews ORDER BY id DESC');
-      res.json(rows);
-    } catch (e) {
-      res.status(500).json({ error: 'DB error' });
-    }
-  });
-
-  app.post('/api/reviews', async (req, res) => {
-    try {
-      let { author, rating, text, date } = req.body;
-      author = String(author || '').substring(0, 100).trim();
-      text = String(text || '').substring(0, 1000).trim();
-      rating = Number(rating) || 5;
-      if (!author || !rating || !text) {
-        return res.status(400).json({ success: false, message: 'Chybí povinné údaje' });
-      }
-      
-      // Zamezení kolize v jedné milisekundě
-      const id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-      await pool.query(
-        'INSERT INTO reviews (id, author, rating, text, date) VALUES (?, ?, ?, ?, ?)',
-        [id, author, rating, text, date || new Date().toLocaleDateString('cs-CZ')]
-      );
-      
-      res.json({ success: true, id });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ success: false });
-    }
-  });
-
-  // --- END REVIEWS API ---
-  
   // --- PUBLIC API Routes ---
 
-
   app.get('/api/settings', async (req, res) => {
-    try {
-      const [rows] = await pool.query('SELECT setting_key, setting_value FROM settings');
-      const settings = rows.reduce((acc, row) => ({ ...acc, [row.setting_key]: row.setting_value }), { clientSectionEnabled: false });
-      res.json(settings);
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ success: false, message: 'DB Error' });
-    }
+    const db = await getDB();
+    res.json(db.settings);
   });
 
   app.post('/api/reservation', async (req, res) => {
     try {
-      let { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs, website } = req.body;
-      customerName = String(customerName || '').substring(0, 100).trim();
-      phone = String(phone || '').substring(0, 50).trim();
-      email = String(email || '').substring(0, 100).trim();
-      note = String(note || '').substring(0, 1000).trim();
+      const { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs, website } = req.body;
 
       // Honeypot check for spam bots
       if (website) {
@@ -178,39 +148,9 @@ async function startServer() {
         return res.status(400).json({ success: false, message: 'Chybí povinné údaje' });
       }
 
-      const connection = await pool.getConnection();
-      let resId;
-      try {
-        await connection.beginTransaction();
-
-        // ZAMKNE záznamy pro daný datum a čas, takže žádný jiný request nemůže tento termín zarezervovat
-        const [existing]: any = await connection.query(
-          'SELECT id FROM reservations WHERE date = ? AND time = ? AND status != ? FOR UPDATE',
-          [date, time, 'cancelled']
-        );
-
-        if (existing.length > 0) {
-          await connection.rollback();
-          return res.status(409).json({ success: false, message: 'Tento termín již někdo před zlomkem sekundy obsadil. Vyberte si prosím jiný.' });
-        }
-
-        resId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-        await connection.query(
-          `INSERT INTO reservations (id, serviceId, date, time, customerName, phone, email, note, totalPrice, vs, status, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [resId, serviceId, date, time, customerName, phone, email, note || '', totalPrice || 0, vs || '', 'pending', new Date().toISOString()]
-        );
-
-        await connection.commit();
-      } catch (err) {
-        await connection.rollback();
-        throw err;
-      } finally {
-        connection.release();
-      }
-      
+      const db = await getDB();
       const newReservation = {
-        id: resId,
+        id: Date.now(),
         serviceId,
         date,
         time,
@@ -220,8 +160,12 @@ async function startServer() {
         note,
         totalPrice,
         vs,
-        status: 'pending'
+        status: 'pending', // 'pending' | 'confirmed' | 'paid' | 'cancelled'
+        createdAt: new Date().toISOString()
       };
+
+      db.reservations.push(newReservation);
+      await saveDB(db);
 
       // 1. Zpráva pro Terezu (administrátora)
       const adminMailOptions = {
@@ -317,15 +261,9 @@ async function startServer() {
       const summary = type === 'value' ? `Poukaz v hodnotě ${value} Kč` : `Poukaz na službu: ${service}`;
       const amount = type === 'value' ? parseInt(value) : getPriceForService(service);
 
-      const vId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-      await pool.query(
-        `INSERT INTO vouchers (id, type, value, service, summary, amount, recipientName, senderName, email, note, status, voucherCode, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [vId, type, type === 'value' ? parseInt(value) : null, type === 'service' ? service : null, summary, amount, recipientName, senderName, email, note || '', 'pending', '', new Date().toISOString()]
-      );
-      
+      const db = await getDB();
       const newVoucher = {
-        id: vId,
+        id: Date.now(),
         type,
         value: type === 'value' ? parseInt(value) : null,
         service: type === 'service' ? service : null,
@@ -335,8 +273,13 @@ async function startServer() {
         senderName,
         email,
         note,
-        status: 'pending'
+        status: 'pending', // 'pending' | 'paid' | 'cancelled'
+        voucherCode: '',
+        createdAt: new Date().toISOString()
       };
+
+      db.vouchers.push(newVoucher);
+      await saveDB(db);
 
       const qrMsg = removeDiacritics(`Poukaz ${recipientName}`.slice(0, 60));
       const qrData = `SPD*1.0*ACC:${IBAN}*AM:${amount}.00*CC:CZK*MSG:${qrMsg}`;
@@ -419,8 +362,9 @@ async function startServer() {
 
   app.get('/api/admin/reservations', requireAdmin, async (req, res) => {
     try {
-      const [rows] = await pool.query('SELECT * FROM reservations ORDER BY id DESC');
-      res.json({ success: true, reservations: rows });
+      const db = await getDB();
+      const sorted = [...(db.reservations || [])].sort((a: any, b: any) => b.id - a.id);
+      res.json({ success: true, reservations: sorted });
     } catch (error) {
       console.error(error);
       res.status(500).json({ success: false, message: 'Chyba serveru při načítání' });
@@ -429,8 +373,9 @@ async function startServer() {
 
   app.get('/api/admin/vouchers', requireAdmin, async (req, res) => {
     try {
-      const [rows] = await pool.query('SELECT * FROM vouchers ORDER BY id DESC');
-      res.json({ success: true, vouchers: rows });
+      const db = await getDB();
+      const sorted = [...(db.vouchers || [])].sort((a: any, b: any) => b.id - a.id);
+      res.json({ success: true, vouchers: sorted });
     } catch (error) {
       console.error(error);
       res.status(500).json({ success: false, message: 'Chyba serveru při načítání poukazů' });
@@ -441,16 +386,23 @@ async function startServer() {
     try {
       const { id } = req.params;
       const { newDate, newTime } = req.body;
-      const [rows]: any = await pool.query('SELECT * FROM reservations WHERE id = ?', [parseInt(id as string)]);
-if (rows.length === 0) {
-  return res.status(404).json({ success: false, message: 'Rezervace nenalezena' });
-}
-const reservation = rows[0];
-const oldDate = reservation.date;
-const oldTime = reservation.time;
-await pool.query('UPDATE reservations SET date = ?, time = ? WHERE id = ?', [newDate, newTime, parseInt(id as string)]);
-reservation.date = newDate;
-reservation.time = newTime;
+      const db = await getDB();
+      const reservation = db.reservations.find((r: any) => r.id === parseInt(id as string));
+      
+      if (!reservation) {
+        return res.status(404).json({ success: false, message: 'Rezervace nenalezena' });
+      }
+
+      const oldDate = reservation.date;
+      const oldTime = reservation.time;
+
+      reservation.date = newDate;
+      reservation.time = newTime;
+      
+      // Optionally change status back to pending or keep it as is, or confirmed. Let's keep status.
+      // Usually reschedule implies it's confirmed or pending, let's keep current status.
+      
+      await saveDB(db);
 
       // Email to the user about new term
       let htmlBody = `
@@ -490,11 +442,14 @@ reservation.time = newTime;
       const { id } = req.params;
       const { status } = req.body; // 'paid' | 'cancelled' | 'pending'
       
-      const [rows]: any = await pool.query('SELECT * FROM vouchers WHERE id = ?', [parseInt(id as string)]);
-      if (rows.length === 0) {
+      const db = await getDB();
+      const vIndex = db.vouchers.findIndex((v: any) => v.id === parseInt(id as string));
+      
+      if (vIndex === -1) {
         return res.status(404).json({ success: false, message: 'Poukaz nenalezen' });
       }
-      const voucher = rows[0];
+
+      const voucher = db.vouchers[vIndex];
       voucher.status = status;
       
       let voucherCode = voucher.voucherCode;
@@ -503,7 +458,7 @@ reservation.time = newTime;
         voucher.voucherCode = voucherCode;
       }
       
-      await pool.query('UPDATE vouchers SET status = ?, voucherCode = ? WHERE id = ?', [status, voucherCode || '', parseInt(id as string)]);
+      await saveDB(db);
 
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         let subject = '';
@@ -623,9 +578,9 @@ reservation.time = newTime;
 
   app.post('/api/admin/settings', requireAdmin, async (req, res) => {
     try {
-      for (const [key, value] of Object.entries(req.body)) {
-        await pool.query('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?', [key, JSON.stringify(value), JSON.stringify(value)]);
-      }
+      const db = await getDB();
+      db.settings = { ...db.settings, ...req.body };
+      await saveDB(db);
       res.json({ success: true });
     } catch (e) {
       console.error(e);
@@ -635,11 +590,8 @@ reservation.time = newTime;
 
   app.get('/api/admin/backup', requireAdmin, async (req, res) => {
     try {
-      const [reservations] = await pool.query('SELECT * FROM reservations');
-      const [vouchers] = await pool.query('SELECT * FROM vouchers');
-      const [settingsRows]: any = await pool.query('SELECT * FROM settings');
-      const settings = settingsRows.reduce((acc: any, row: any) => ({ ...acc, [row.setting_key]: row.setting_value }), {});
-      res.json({ reservations, vouchers, settings });
+      const db = await getDB();
+      res.json(db);
     } catch (e) {
       console.error(e);
       res.status(500).json({ success: false, message: 'Chyba při zálohování' });
@@ -647,7 +599,18 @@ reservation.time = newTime;
   });
 
   app.post('/api/admin/restore', requireAdmin, async (req, res) => {
-    res.status(400).json({ success: false, message: 'Obnova ze zálohy je při použití MySQL databáze vypnutá. Kontaktujte správce databáze.' });
+    try {
+      const backupData = req.body;
+      // Basic validation
+      if (!backupData || !Array.isArray(backupData.reservations)) {
+        return res.status(400).json({ success: false, message: 'Neplatný formát zálohy' });
+      }
+      await saveDB(backupData);
+      res.json({ success: true, message: 'Záloha byla úspěšně obnovena.' });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ success: false, message: 'Chyba při obnově' });
+    }
   });
 
   app.post('/api/admin/reservation/:id/status', requireAdmin, async (req, res) => {
@@ -655,15 +618,18 @@ reservation.time = newTime;
       const { id } = req.params;
       const { status, reason, alternativeTermin } = req.body; // 'confirmed', 'paid', 'cancelled', 'pending'
       
-      const [rows]: any = await pool.query('SELECT * FROM reservations WHERE id = ?', [parseInt(id as string)]);
-if (rows.length === 0) {
-  return res.status(404).json({ success: false, message: 'Nenalezeno' });
-}
-const reservation = rows[0];
-reservation.status = status;
-if (reason) reservation.cancelReason = reason;
-if (alternativeTermin) reservation.alternativeTermin = alternativeTermin;
-await pool.query('UPDATE reservations SET status = ? WHERE id = ?', [status, parseInt(id as string)]);
+      const db = await getDB();
+      const resIndex = db.reservations.findIndex((r: any) => r.id === parseInt(id as string));
+      
+      if (resIndex === -1) {
+        return res.status(404).json({ success: false, message: 'Nenalezeno' });
+      }
+
+      const reservation = db.reservations[resIndex];
+      reservation.status = status;
+      if (reason) reservation.cancelReason = reason;
+      if (alternativeTermin) reservation.alternativeTermin = alternativeTermin;
+      await saveDB(db);
 
       // Send automated emails based on new status
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
@@ -777,11 +743,12 @@ await pool.query('UPDATE reservations SET status = ? WHERE id = ?', [status, par
   app.post('/api/admin/reservation/:id/thankyou', requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const [rows]: any = await pool.query('SELECT * FROM reservations WHERE id = ?', [parseInt(id as string)]);
-      if (rows.length === 0) {
+      const db = await getDB();
+      const reservation = db.reservations.find((r: any) => r.id === parseInt(id as string));
+      
+      if (!reservation) {
         return res.status(404).json({ success: false });
       }
-      const reservation = rows[0];
 
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         try {

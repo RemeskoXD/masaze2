@@ -18,18 +18,31 @@ const Reviews: React.FC = () => {
   const [newReview, setNewReview] = useState({ name: '', text: '', rating: 5 });
   
   // Load reviews from localStorage + mock data
-  const [reviews, setReviews] = useState(() => {
-    const saved = localStorage.getItem('custom_reviews');
-    if (saved) {
+  const [reviews, setReviews] = useState<any[]>(MOCK_REVIEWS);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        return [...MOCK_REVIEWS, ...parsed];
-      } catch (e) {
-        return MOCK_REVIEWS;
+        const res = await fetch('/api/reviews');
+        if (res.ok) {
+          const data = await res.json();
+          // We can combine MOCK_REVIEWS with DB reviews, or just use DB reviews if they are already combined.
+          // Since MOCK_REVIEWS might not be in DB yet, let's prepend them with DB reviews.
+          const customReviews = data.map((d: any) => ({
+            id: d.id,
+            author: d.author,
+            rating: d.rating,
+            text: d.text,
+            date: d.date
+          }));
+          setReviews([...MOCK_REVIEWS, ...customReviews]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch reviews', err);
       }
-    }
-    return MOCK_REVIEWS;
-  });
+    };
+    fetchReviews();
+  }, []);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(1);
@@ -60,28 +73,35 @@ const Reviews: React.FC = () => {
     setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newId = Date.now();
     const newObj = {
-      id: newId,
       author: newReview.name,
       rating: newReview.rating,
       text: newReview.text,
       date: 'Ověřená recenze (Dnes)'
     };
     
-    const updatedReviews = [...reviews, newObj];
-    setReviews(updatedReviews);
-    
-    // Save only user custom reviews to localStorage to keep it separate from static mock data
-    const customOnly = updatedReviews.filter(r => !MOCK_REVIEWS.some(mock => mock.id === r.id));
-    localStorage.setItem('custom_reviews', JSON.stringify(customOnly));
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newObj)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const createdReview = { ...newObj, id: data.id };
+        setReviews(prev => [...prev, createdReview]);
+        
+        alert("Recenze byla úspěšně přidána a hned se zobrazí v seznamu!");
+        setShowForm(false);
+        setNewReview({ name: '', text: '', rating: 5 });
+      }
+    } catch (e) {
+      alert("Chyba při odesílání recenze");
+    }
 
-    alert("Recenze byla úspěšně přidána a hned se zobrazí v seznamu!");
-    setShowForm(false);
-    setNewReview({ name: '', text: '', rating: 5 });
     
     // Scroll automatically to the newly added review
     setTimeout(() => {
