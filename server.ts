@@ -82,7 +82,12 @@ const pool = mysql.createPool({
 
 
 async function startServer() {
-  const app = express();
+  if (!process.env.ADMIN_TOKEN) {
+  console.error('FATAL ERROR: ADMIN_TOKEN environment variable is missing.');
+  process.exit(1);
+}
+
+const app = express();
   const PORT = 3000;
 
   app.use(cors());
@@ -102,7 +107,7 @@ async function startServer() {
   // Basic admin authentication middleware for /api/admin/* routes
   const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (token === (process.env.ADMIN_TOKEN || 'Terezka2026.!')) {
+    if (token === process.env.ADMIN_TOKEN) {
       next();
     } else {
       res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -412,8 +417,8 @@ async function startServer() {
   
   app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === (process.env.ADMIN_TOKEN || 'Terezka2026.!')) {
-      res.json({ success: true, token: process.env.ADMIN_TOKEN || 'Terezka2026.!' });
+    if (password === process.env.ADMIN_TOKEN) {
+      res.json({ success: true, token: process.env.ADMIN_TOKEN });
     } else {
       res.json({ success: false });
     }
@@ -625,6 +630,9 @@ reservation.time = newTime;
 
   app.post('/api/admin/settings', requireAdmin, async (req, res) => {
     try {
+      if (typeof req.body !== 'object' || Array.isArray(req.body) || req.body === null) {
+          return res.status(400).json({ success: false, message: 'Invalid payload' });
+      }
       for (const [key, value] of Object.entries(req.body)) {
         await pool.query('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?', [key, JSON.stringify(value), JSON.stringify(value)]);
       }

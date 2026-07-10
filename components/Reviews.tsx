@@ -106,7 +106,7 @@ const Reviews: React.FC = () => {
     // Scroll automatically to the newly added review
     setTimeout(() => {
       // itemsPerView might have been updated, calculate new maxIndex
-      const targetMax = Math.max(0, updatedReviews.length - itemsPerView);
+      const targetMax = Math.max(0, (reviews.length + 1) - itemsPerView);
       setCurrentIndex(targetMax);
     }, 100);
   };

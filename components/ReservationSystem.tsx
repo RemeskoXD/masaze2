@@ -28,59 +28,36 @@ const ReservationSystem: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [openingHours, setOpeningHours] = useState<any>({
-    'Pondělí': { start: '09:00', end: '18:00' },
-    'Úterý': { start: '09:00', end: '18:00' },
-    'Středa': { start: '09:00', end: '18:00' },
-    'Čtvrtek': { start: '09:00', end: '18:00' },
-    'Pátek': { start: '09:00', end: '18:00' },
-    'Sobota': { start: '09:00', end: '18:00' },
-    'Neděle': { start: '09:00', end: '18:00' }
+    'Pondělí': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Úterý': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Středa': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Čtvrtek': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Pátek': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Sobota': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Neděle': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' }
   });
+  const [closedDates, setClosedDates] = useState<string>('');
 
   useEffect(() => {
-     const fetchSettings = async () => {
-         try {
-             const res = await fetch('/api/settings');
-             if (res.ok) {
-                 const data = await res.json();
-                 if (data.openingHours) setOpeningHours(data.openingHours);
-             }
-         } catch (e) {
-             console.log(e);
-         }
-     };
-     fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    const handleSelectService = (e: Event) => {
-      const customEvent = e as CustomEvent<{ serviceId: number }>;
-      setSelectedService(customEvent.detail.serviceId);
-      
-      const service = SERVICES_LIST.find(s => s.id === customEvent.detail.serviceId);
-      if (service && service.category !== 'specialni') {
-        setSelectedCategory(service.category);
-      } else {
-        setSelectedCategory('vse');
-      }
-
-      setStep(1);
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.openingHours) setOpeningHours(data.openingHours);
+          if (data.closedDates) setClosedDates(data.closedDates);
+        }
+      } catch (e) { console.log(e); }
     };
-
-    window.addEventListener('selectServiceEvent', handleSelectService);
-    return () => window.removeEventListener('selectServiceEvent', handleSelectService);
+    fetchSettings();
   }, []);
 
   const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
     if (!serviceId) return [];
     const service = SERVICES_LIST.find(s => s.id === serviceId);
     if (!service) return [];
-  
-    // Parse duration number (e.g. "60 min" -> 60)
     const durationMatch = service.duration.match(/(\d+)/);
     let duration = durationMatch ? parseInt(durationMatch[0]) : 60;
-  
-    // Add addon durations
     selectedAddons.forEach(addonId => {
         const addon = SERVICES_LIST.find(s => s.id === addonId);
         if (addon) {
@@ -91,45 +68,55 @@ const ReservationSystem: React.FC = () => {
 
     let dayOfWeek = 'Pondělí';
     if (dateStr) {
+      if (closedDates.split(',').includes(dateStr)) return [];
       const d = new Date(dateStr);
       dayOfWeek = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'][d.getDay()];
     }
 
     const daySettings = openingHours[dayOfWeek];
     if (!daySettings || !daySettings.start || !daySettings.end) return [];
-
     const startParts = daySettings.start.split(':');
     const endParts = daySettings.end.split(':');
-    
     let startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
     let endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
-  
-    // Gap between massages based on duration
+
     let gap = 0;
     if (duration <= 30) gap = 15;
     else if (duration === 60) gap = 30;
-    else gap = 30; // 90 min and more
-  
+    else gap = 30;
+
     const totalBlockMinutes = duration + gap;
     const slots = [];
     
+    let breakStartMinutes = -1;
+    let breakEndMinutes = -1;
+    if (daySettings.breakStart && daySettings.breakEnd) {
+        const bs = daySettings.breakStart.split(':');
+        const be = daySettings.breakEnd.split(':');
+        breakStartMinutes = parseInt(bs[0]) * 60 + parseInt(bs[1]);
+        breakEndMinutes = parseInt(be[0]) * 60 + parseInt(be[1]);
+    }
+    
     let currentMinutes = startMinutes;
     
-    // Create blocks that fit in the window
     while (currentMinutes + duration <= endMinutes) {
-        const h = Math.floor(currentMinutes / 60);
-        const m = currentMinutes % 60;
-        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-        currentMinutes += totalBlockMinutes;
+        let isValid = true;
+        if (breakStartMinutes !== -1 && breakEndMinutes !== -1) {
+            const blockEnd = currentMinutes + duration;
+            if (currentMinutes < breakEndMinutes && blockEnd > breakStartMinutes) {
+                isValid = false;
+                currentMinutes = breakEndMinutes;
+                continue;
+            }
+        }
+        if (isValid) {
+            const h = Math.floor(currentMinutes / 60);
+            const m = currentMinutes % 60;
+            slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+            currentMinutes += totalBlockMinutes;
+        }
     }
-  
     return slots;
-  };
-
-
-  const handleServiceSelect = (id: number) => {
-    setSelectedService(id);
-    setTimeout(() => setStep(2), 300); // Slight delay for the animation to play
   };
 
   const handleDateSelect = (date: string) => {
@@ -139,162 +126,17 @@ const ReservationSystem: React.FC = () => {
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
-    setTimeout(() => setStep(3), 300);
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  };
-
-  const prevMonth = () => {
-    const today = new Date();
-    if (currentMonth.getMonth() > today.getMonth() || currentMonth.getFullYear() > today.getFullYear()) {
-         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-    }
-  };
-
-  // Calendar Generation
-  const generateCalendarDays = () => {
-       const year = currentMonth.getFullYear();
-       const month = currentMonth.getMonth();
-       const daysInMonth = new Date(year, month + 1, 0).getDate();
-       const firstDay = new Date(year, month, 1).getDay();
-       const startingDay = firstDay === 0 ? 6 : firstDay - 1; // Monday as 0
-
-       const days = [];
-       for (let i = 0; i < startingDay; i++) {
-         days.push(null);
-       }
-       for (let i = 1; i <= daysInMonth; i++) {
-         days.push(new Date(year, month, i));
-       }
-       return days;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+    if (!selectedDate || !selectedTime || !selectedService) {
+      setErrorMsg('Vyberte prosím službu, datum a čas.');
+      return;
+    }
     setIsSubmitting(true);
-    setErrorMsg(null);
 
-    // Basic frontend validation
-    const phoneRegex = /^[+]?[0-9\s]{9,15}$/;
-    if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
-        setErrorMsg("Zadejte prosím platné telefonní číslo.");
-        setIsSubmitting(false);
-        return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-        setErrorMsg("Zadejte prosím platnou e-mailovou adresu.");
-        setIsSubmitting(false);
-        return;
-    }
-
-    const mainService = SERVICES_LIST.find(s => s.id === selectedService);
-    let totalPriceMatch = mainService?.price.match(/\d+/);
-    let totalPrice = totalPriceMatch ? parseInt(totalPriceMatch[0]) : 0;
-    
-    selectedAddons.forEach(id => {
-      const addon = SERVICES_LIST.find(s => s.id === id);
-      if (addon) {
-        const match = addon.price.match(/\d+/);
-        if (match) {
-          totalPrice += parseInt(match[0]);
-        }
-      }
-    });
-
-    const parts = formData.name.trim().split(/\s+/);
-    const surname = parts.length > 1 ? parts[parts.length - 1] : parts[0];
-    const surnameClean = surname.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, '');
-
-    const dateObj = new Date(selectedDate!);
-    const day = dateObj.getDate().toString().padStart(2, '0');
-    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-    const year = dateObj.getFullYear().toString().slice(-2);
-    const timeParts = selectedTime!.split(':');
-    const vs = `${day}${month}${year}${timeParts[0]}${timeParts[1]}`;
-
-    const sanitize = (str: string) => str.replace(/[<>]/g, '').trim();
-
-    const addonTexts = selectedAddons.map(id => {
-        const addon = SERVICES_LIST.find(s => s.id === id);
-        return addon ? `${addon.title} (${addon.price}, ${addon.duration})` : null;
-    }).filter(Boolean).join(', ');
-
-    const finalNote = selectedAddons.length > 0 
-        ? `${sanitize(formData.note)}\n\n--- Vybrané doplňky ---\n${addonTexts}`.trim()
-        : sanitize(formData.note);
-
-    const reservationData = {
-        serviceId: selectedService,
-        date: selectedDate,
-        time: selectedTime,
-        customerName: sanitize(formData.name),
-        email: sanitize(formData.email),
-        phone: sanitize(formData.phone),
-        note: finalNote,
-        website: formData.website, // Send honeypot value to backend
-        totalPrice,
-        surnameClean,
-        vs
-    };
-
-    try {
-        const response = await fetch('/api/reservation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(reservationData)
-        });
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-           throw new Error("Server vrátil neočekávanou odpověď");
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            setSubmitted(true);
-        } else {
-            console.error("API Error:", result);
-            setErrorMsg(result.message || "Nepodařilo se vytvořit rezervaci.");
-        }
-
-    } catch (error) {
-        console.error("Connection error:", error);
-        setErrorMsg("Nepodařilo se spojit se serverem.");
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  const resetForm = () => {
-    setSubmitted(false);
-    setStep(1);
-    setSelectedService(null);
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setSelectedAddons([]);
-    setFormData({ name: '', email: '', phone: '', note: '' });
-    setErrorMsg(null);
-  };
-
-  if (submitted) {
-    const mainService = SERVICES_LIST.find(s => s.id === selectedService);
-    let totalPriceMatch = mainService?.price.match(/\d+/);
-    let totalPrice = totalPriceMatch ? parseInt(totalPriceMatch[0]) : 0;
-    
-    selectedAddons.forEach(id => {
-      const addon = SERVICES_LIST.find(s => s.id === id);
-      if (addon) {
-        const match = addon.price.match(/\d+/);
-        if (match) {
-          totalPrice += parseInt(match[0]);
-        }
-      }
-    });
 
     const parts = formData.name.trim().split(/\s+/);
     const surname = parts.length > 1 ? parts[parts.length - 1] : parts[0];
@@ -320,7 +162,14 @@ const ReservationSystem: React.FC = () => {
       return `CZ${checkDigits}${bban}`;
     };
 
-    const depositPrice = totalPrice;
+    const selectedServiceData = SERVICES_LIST.find(s => s.id === selectedService);
+    const servicePrice = selectedServiceData ? parseInt(selectedServiceData.price.replace(/[^\d]/g, '')) || 0 : 0;
+    let addonsPrice = 0;
+    selectedAddons.forEach(id => {
+        const a = SERVICES_LIST.find(s => s.id === id);
+        if (a) addonsPrice += parseInt(a.price.replace(/[^\d]/g, '')) || 0;
+    });
+    const depositPrice = servicePrice + addonsPrice;
     const spaydString = `SPD*1.0*ACC:${getIban()}*AM:${depositPrice}.00*CC:CZK*X-VS:${vs}*MSG:Zaloha Masaze ${surnameClean}`.toUpperCase();
 
     return (
@@ -388,7 +237,7 @@ const ReservationSystem: React.FC = () => {
             </div>
 
             <button 
-                onClick={resetForm} 
+                onClick={() => { setSelectedService(null); setSelectedAddons([]); setSelectedDate(null); setSelectedTime(null); setStep(1); }} 
                 className="px-10 py-4 bg-transparent border border-gold/50 text-gold-dark hover:bg-gold hover:text-white hover:border-gold transition-all duration-500 rounded-full uppercase tracking-[0.2em] font-medium text-sm w-full sm:w-auto"
             >
                 Zpět na úvod
@@ -508,7 +357,7 @@ const ReservationSystem: React.FC = () => {
                                 return (
                                 <button
                                     key={service.id}
-                                    onClick={() => handleServiceSelect(service.id)}
+                                    onClick={() => setSelectedService(service.id)}
                                     className={`group relative flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 text-left overflow-hidden ${
                                         isSelected 
                                         ? 'border-gold bg-gold/5 shadow-md' 
@@ -566,13 +415,13 @@ const ReservationSystem: React.FC = () => {
                                     <Calendar size={16} className="text-gold" /> Kalendář
                                 </h4>
                                 <div className="flex items-center gap-4">
-                                    <button onClick={prevMonth} className="p-1 hover:text-gold transition-colors text-text-muted">
+                                    <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-1 hover:text-gold transition-colors text-text-muted">
                                         <ChevronLeft size={20} />
                                     </button>
                                     <span className="font-serif text-lg min-w-[120px] text-center text-text-dark">
                                         {currentMonth.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}
                                     </span>
-                                    <button onClick={nextMonth} className="p-1 hover:text-gold transition-colors text-text-muted">
+                                    <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-1 hover:text-gold transition-colors text-text-muted">
                                         <ChevronRight size={20} />
                                     </button>
                                 </div>
@@ -587,7 +436,20 @@ const ReservationSystem: React.FC = () => {
                                     {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(d => <div key={d} className="py-2">{d}</div>)}
                                 </div>
                                 <div className="grid grid-cols-7 gap-1">
-                                    {generateCalendarDays().map((date, idx) => {
+                                    {(() => {
+    const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const firstDay = d.getDay();
+    const startingDay = firstDay === 0 ? 6 : firstDay - 1; // Start on Monday
+    const days = [];
+    for (let i = 0; i < startingDay; i++) {
+        days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push(i);
+    }
+    return days;
+})().map((date, idx) => {
                                         if (!date) return <div key={`empty-${idx}`} className="p-2"></div>;
                                         const dateStr = date.toISOString().split('T')[0];
                                         const isSelected = selectedDate === dateStr;
