@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const ReservationSystem: React.FC = () => {
   const [step, setStep] = useState(1);
+  const goToStep = (newStep: number) => { setStep(newStep); setTimeout(() => { const el = document.getElementById('reservation'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 100; window.scrollTo({top: y, behavior: 'smooth'}); } }, 50); };
   const [selectedCategory, setSelectedCategory] = useState<string | 'vse'>('vse');
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -27,16 +28,21 @@ const ReservationSystem: React.FC = () => {
   // Calendar State
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const [openingHours, setOpeningHours] = useState<any>({
-    'Pondělí': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
-    'Úterý': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
-    'Středa': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
-    'Čtvrtek': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
-    'Pátek': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
-    'Sobota': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
-    'Neděle': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' }
-  });
-  const [closedDates, setClosedDates] = useState<string>('');
+  const [specificDates, setSpecificDates] = useState<any>({});
+  
+  useEffect(() => {
+    const handleSelectService = (e: any) => {
+      const detail = e.detail;
+      if (detail && detail.serviceId) {
+        setSelectedService(detail.serviceId);
+        goToStep(2);
+      }
+    };
+    window.addEventListener('selectServiceEvent', handleSelectService);
+    return () => {
+      window.removeEventListener('selectServiceEvent', handleSelectService);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -44,18 +50,30 @@ const ReservationSystem: React.FC = () => {
         const res = await fetch('/api/settings');
         if (res.ok) {
           const data = await res.json();
-          if (data.openingHours) setOpeningHours(data.openingHours);
-          if (data.closedDates) setClosedDates(data.closedDates);
+          if (data.specificDates) {
+            try {
+              if (typeof data.specificDates === 'string') {
+                setSpecificDates(JSON.parse(data.specificDates));
+              } else {
+                setSpecificDates(data.specificDates);
+              }
+            } catch(e){}
+          }
         }
       } catch (e) { console.log(e); }
     };
     fetchSettings();
   }, []);
 
-  const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
-    if (!serviceId) return [];
+    const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
+    if (!serviceId || !dateStr) return [];
+    
+    const settings = specificDates[dateStr];
+    if (!settings || !settings.isOpen || !settings.start || !settings.end) return [];
+
     const service = SERVICES_LIST.find(s => s.id === serviceId);
     if (!service) return [];
+    
     const durationMatch = service.duration.match(/(\d+)/);
     let duration = durationMatch ? parseInt(durationMatch[0]) : 60;
     selectedAddons.forEach(addonId => {
@@ -66,17 +84,8 @@ const ReservationSystem: React.FC = () => {
         }
     });
 
-    let dayOfWeek = 'Pondělí';
-    if (dateStr) {
-      if (closedDates.split(',').includes(dateStr)) return [];
-      const d = new Date(dateStr);
-      dayOfWeek = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'][d.getDay()];
-    }
-
-    const daySettings = openingHours[dayOfWeek];
-    if (!daySettings || !daySettings.start || !daySettings.end) return [];
-    const startParts = daySettings.start.split(':');
-    const endParts = daySettings.end.split(':');
+    const startParts = settings.start.split(':');
+    const endParts = settings.end.split(':');
     let startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
     let endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
 
@@ -84,31 +93,32 @@ const ReservationSystem: React.FC = () => {
     if (duration <= 30) gap = 15;
     else if (duration === 60) gap = 30;
     else gap = 30;
-
     const totalBlockMinutes = duration + gap;
+
+    const breaks = (settings.breaks || []).map((br: any) => {
+        const bs = br.start.split(':');
+        const be = br.end.split(':');
+        return {
+            start: parseInt(bs[0]) * 60 + parseInt(bs[1]),
+            end: parseInt(be[0]) * 60 + parseInt(be[1])
+        };
+    });
+
     const slots = [];
-    
-    let breakStartMinutes = -1;
-    let breakEndMinutes = -1;
-    if (daySettings.breakStart && daySettings.breakEnd) {
-        const bs = daySettings.breakStart.split(':');
-        const be = daySettings.breakEnd.split(':');
-        breakStartMinutes = parseInt(bs[0]) * 60 + parseInt(bs[1]);
-        breakEndMinutes = parseInt(be[0]) * 60 + parseInt(be[1]);
-    }
-    
     let currentMinutes = startMinutes;
     
     while (currentMinutes + duration <= endMinutes) {
         let isValid = true;
-        if (breakStartMinutes !== -1 && breakEndMinutes !== -1) {
-            const blockEnd = currentMinutes + duration;
-            if (currentMinutes < breakEndMinutes && blockEnd > breakStartMinutes) {
+        let blockEnd = currentMinutes + duration;
+        
+        for (const br of breaks) {
+            if (currentMinutes < br.end && blockEnd > br.start) {
                 isValid = false;
-                currentMinutes = breakEndMinutes;
-                continue;
+                currentMinutes = br.end; // Jump to the end of the break
+                break;
             }
         }
+        
         if (isValid) {
             const h = Math.floor(currentMinutes / 60);
             const m = currentMinutes % 60;
@@ -126,7 +136,7 @@ const ReservationSystem: React.FC = () => {
 
   const handleTimeSelect = (time: string) => {
     if (selectedTime === time) {
-        setStep(3);
+        goToStep(3);
     } else {
         setSelectedTime(time);
     }
@@ -241,7 +251,7 @@ const ReservationSystem: React.FC = () => {
             </div>
 
             <button 
-                onClick={() => { setSelectedService(null); setSelectedAddons([]); setSelectedDate(null); setSelectedTime(null); setStep(1); }} 
+                onClick={() => { setSelectedService(null); setSelectedAddons([]); setSelectedDate(null); setSelectedTime(null); goToStep(1); }} 
                 className="px-10 py-4 bg-transparent border border-gold/50 text-gold-dark hover:bg-gold hover:text-white hover:border-gold transition-all duration-500 rounded-full uppercase tracking-[0.2em] font-medium text-sm w-full sm:w-auto"
             >
                 Zpět na úvod
@@ -361,7 +371,7 @@ const ReservationSystem: React.FC = () => {
                                 return (
                                 <button
                                     key={service.id}
-                                    onClick={() => { if (selectedService === service.id) setStep(2); else setSelectedService(service.id); }}
+                                    onClick={() => { if (selectedService === service.id) goToStep(2); else setSelectedService(service.id); }}
                                     className={`group relative flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 text-left overflow-hidden ${
                                         isSelected 
                                         ? 'border-gold bg-gold/5 shadow-md' 
@@ -401,7 +411,7 @@ const ReservationSystem: React.FC = () => {
                                     className="mt-8 flex justify-end overflow-hidden"
                                 >
                                     <button
-                                        onClick={() => setStep(2)}
+                                        onClick={() => goToStep(2)}
                                         className="px-8 py-3 bg-gold text-white rounded-full font-medium tracking-wide hover:bg-gold-dark transition-colors shadow-md flex items-center gap-2"
                                     >
                                         Pokračovat k výběru termínu
@@ -426,7 +436,7 @@ const ReservationSystem: React.FC = () => {
                             <h3 className="text-3xl text-text-dark font-serif">
                                 Vyberte termín
                             </h3>
-                            <button onClick={() => setStep(1)} className="text-sm text-text-muted hover:text-gold-dark flex items-center gap-1 transition-colors uppercase tracking-widest font-medium">
+                            <button onClick={() => goToStep(1)} className="text-sm text-text-muted hover:text-gold-dark flex items-center gap-1 transition-colors uppercase tracking-widest font-medium">
                                 <ArrowLeft size={14} /> Zpět
                             </button>
                         </div>
@@ -556,7 +566,7 @@ const disabled = isPast || !hasSlots;
                                                 className="mt-8 flex justify-end overflow-hidden"
                                             >
                                                 <button
-                                                    onClick={() => setStep(3)}
+                                                    onClick={() => goToStep(3)}
                                                     className="px-8 py-3 bg-gold text-white rounded-full font-medium tracking-wide hover:bg-gold-dark transition-colors shadow-md flex items-center gap-2"
                                                 >
                                                     Pokračovat k údajům
@@ -584,7 +594,7 @@ const disabled = isPast || !hasSlots;
                              <h3 className="text-3xl text-text-dark font-serif">
                                  Kontaktní údaje
                              </h3>
-                             <button onClick={() => setStep(2)} className="text-sm text-text-muted hover:text-gold-dark flex items-center gap-1 transition-colors uppercase tracking-widest font-medium">
+                             <button onClick={() => goToStep(2)} className="text-sm text-text-muted hover:text-gold-dark flex items-center gap-1 transition-colors uppercase tracking-widest font-medium">
                                  <ArrowLeft size={14} /> Zpět
                              </button>
                          </div>

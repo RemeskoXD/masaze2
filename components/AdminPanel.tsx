@@ -5,90 +5,219 @@ import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, Refre
 import { motion, AnimatePresence } from 'motion/react';
 
 
-const AdminCalendarPicker = ({ closedDatesStr, setClosedDates, updateSetting }: { closedDatesStr: string, setClosedDates: (s: string) => void, updateSetting: (k: string, v: string) => void }) => {
+const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updateSetting }: { specificDatesStr: string, setSpecificDatesStr: (s: string) => void, updateSetting: (k: string, v: string) => void }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
     
+    let specificDates = {};
+    try {
+        if (typeof specificDatesStr === 'string') {
+            specificDates = specificDatesStr ? JSON.parse(specificDatesStr) : {};
+        } else if (typeof specificDatesStr === 'object') {
+            specificDates = specificDatesStr;
+        }
+    } catch(e) {
+        console.error("Failed to parse specificDatesStr", e);
+        specificDates = {};
+    }
+
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
     const startingDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; // Start on Monday
     
     const monthNames = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
     
-    const closedDates = closedDatesStr ? closedDatesStr.split(',').filter(Boolean) : [];
-
-    const toggleDate = (day: number) => {
-        const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        // Format as YYYY-MM-DD local time
-        const dateString = d.toLocaleDateString('en-CA'); 
-        
-        let newDates;
-        if (closedDates.includes(dateString)) {
-            newDates = closedDates.filter(cd => cd !== dateString);
-        } else {
-            newDates = [...closedDates, dateString];
-        }
-        
-        const newDatesStr = newDates.join(',');
-        setClosedDates(newDatesStr);
-        updateSetting('closedDates', newDatesStr);
-    };
-
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
+    const selectedSettings = selectedDateStr ? (specificDates[selectedDateStr] || { isOpen: false, start: '09:00', end: '18:00', breaks: [] }) : null;
+
+    const saveDaySettings = (newSettings: any) => {
+        if (!selectedDateStr) return;
+        const updated = { ...specificDates, [selectedDateStr]: newSettings };
+        const updatedStr = JSON.stringify(updated);
+        setSpecificDatesStr(updatedStr);
+        updateSetting('specificDates', updatedStr);
+    };
+
+    const toggleOpen = (checked: boolean) => {
+        saveDaySettings({ ...selectedSettings, isOpen: checked });
+    };
+
+    const addBreak = () => {
+        const breaks = [...(selectedSettings.breaks || []), { start: '12:00', end: '13:00' }];
+        saveDaySettings({ ...selectedSettings, breaks });
+    };
+
+    const removeBreak = (idx: number) => {
+        const breaks = [...(selectedSettings.breaks || [])];
+        breaks.splice(idx, 1);
+        saveDaySettings({ ...selectedSettings, breaks });
+    };
+
+    const updateBreak = (idx: number, field: string, val: string) => {
+        const breaks = [...(selectedSettings.breaks || [])];
+        breaks[idx] = { ...breaks[idx], [field]: val };
+        saveDaySettings({ ...selectedSettings, breaks });
+    };
+
     return (
-        <div className="bg-black/40 border border-gray-600/50 rounded-xl p-6 max-w-md">
-            <div className="flex justify-between items-center mb-6">
-                <button onClick={prevMonth} className="p-2 hover:bg-gold/20 hover:text-gold rounded transition text-gray-400">
-                    <ChevronLeft size={20} />
-                </button>
-                <h4 className="text-xl font-bold text-white tracking-wider">
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h4>
-                <button onClick={nextMonth} className="p-2 hover:bg-gold/20 hover:text-gold rounded transition text-gray-400">
-                    <ChevronRight size={20} />
-                </button>
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="bg-black/40 border border-gray-600/50 rounded-xl p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                    <button onClick={prevMonth} className="p-2 hover:bg-gold/20 hover:text-gold rounded transition text-gray-400">
+                        <ChevronLeft size={20} />
+                    </button>
+                    <h4 className="text-xl font-bold text-white tracking-wider">
+                        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </h4>
+                    <button onClick={nextMonth} className="p-2 hover:bg-gold/20 hover:text-gold rounded transition text-gray-400">
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+                
+                <div className="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                    <div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div>
+                </div>
+                
+                <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: startingDay }).map((_, i) => (
+                        <div key={`empty-${i}`} className="p-3" />
+                    ))}
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const day = i + 1;
+                        const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                        const dateString = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                        const isPast = dateString < new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                        const settings = specificDates[dateString];
+                        const isOpen = settings?.isOpen;
+                        const isSelected = selectedDateStr === dateString;
+                        
+                        return (
+                            <button
+                                key={day}
+                                onClick={() => !isPast && setSelectedDateStr(dateString)}
+                                disabled={isPast}
+                                className={`
+                                    p-3 rounded flex items-center justify-center text-sm font-medium transition-all relative
+                                    ${isPast ? 'opacity-20 cursor-not-allowed text-gray-500' : 'hover:border-gold border border-transparent'}
+                                    ${isSelected ? 'border-gold bg-gold/20 shadow-[0_0_10px_rgba(197,168,128,0.5)]' : ''}
+                                    ${!isPast && isOpen ? 'bg-green-900/40 text-green-400' : ''}
+                                    ${!isPast && !isOpen ? 'bg-red-900/20 text-red-400/50' : ''}
+                                `}
+                            >
+                                {day}
+                                {isOpen && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-green-400"></div>}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className="mt-6 flex flex-col gap-2 text-sm text-gray-400">
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-400"></div> Otevřeno (nastaveno)</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-900/20"></div> Zavřeno (nenastaveno)</div>
+                </div>
             </div>
-            
-            <div className="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
-                <div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div>
-            </div>
-            
-            <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: startingDay }).map((_, i) => (
-                    <div key={`empty-${i}`} className="p-3" />
-                ))}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                    const dateString = d.toLocaleDateString('en-CA');
-                    const isClosed = closedDates.includes(dateString);
-                    const isPast = d < new Date(new Date().setHours(0,0,0,0));
-                    
-                    return (
-                        <button
-                            key={day}
-                            onClick={() => !isPast && toggleDate(day)}
-                            disabled={isPast}
-                            className={`
-                                p-3 rounded flex items-center justify-center text-sm font-medium transition-all
-                                ${isPast ? 'opacity-20 cursor-not-allowed text-gray-500' : 'hover:border-gold border border-transparent'}
-                                ${isClosed ? 'bg-red-500/20 text-red-400 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-gray-800/50 text-gray-300'}
-                            `}
-                        >
-                            {day}
-                        </button>
-                    );
-                })}
-            </div>
-            <div className="mt-6 flex items-center gap-3 text-sm text-gray-400">
-                <div className="w-4 h-4 rounded bg-red-500/20 border border-red-500/50"></div>
-                <span>= Den označen jako zavřeno (Dovolená)</span>
-            </div>
+
+            <AnimatePresence mode="wait">
+                {selectedDateStr && (
+                    <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="bg-black/30 border border-gold/30 rounded-xl p-6 w-full max-w-md"
+                    >
+                        <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                            <h3 className="text-xl font-bold text-white">
+                                Nastavení pro: <span className="text-gold">{new Date(selectedDateStr).toLocaleDateString('cs-CZ')}</span>
+                            </h3>
+                            <button onClick={() => setSelectedDateStr(null)} className="text-gray-400 hover:text-white"><X size={20}/></button>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-black/40 p-4 rounded-lg border border-gray-700 mb-6">
+                            <span className="text-white font-medium">Otevřeno v tento den?</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer" 
+                                    checked={selectedSettings.isOpen}
+                                    onChange={(e) => toggleOpen(e.target.checked)}
+                                />
+                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+
+                        {selectedSettings.isOpen && (
+                            <div className="space-y-6">
+                                <div className="bg-black/20 p-4 rounded-lg border border-gray-700/50">
+                                    <h4 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-3">Pracovní doba</h4>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1">
+                                            <label className="text-xs text-gray-500 block mb-1">Od</label>
+                                            <input 
+                                                type="text" 
+                                                value={selectedSettings.start} 
+                                                onChange={(e) => saveDaySettings({...selectedSettings, start: e.target.value})}
+                                                className="w-full bg-black/50 border border-gray-600 text-white rounded p-2 focus:border-gold outline-none text-center"
+                                                placeholder="09:00"
+                                            />
+                                        </div>
+                                        <span className="text-gray-500 mt-5">-</span>
+                                        <div className="flex-1">
+                                            <label className="text-xs text-gray-500 block mb-1">Do</label>
+                                            <input 
+                                                type="text" 
+                                                value={selectedSettings.end} 
+                                                onChange={(e) => saveDaySettings({...selectedSettings, end: e.target.value})}
+                                                className="w-full bg-black/50 border border-gray-600 text-white rounded p-2 focus:border-gold outline-none text-center"
+                                                placeholder="18:00"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-black/20 p-4 rounded-lg border border-gray-700/50">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="text-sm font-medium text-gray-400 uppercase tracking-widest">Přestávky</h4>
+                                        <button onClick={addBreak} className="text-xs bg-gold/20 text-gold px-2 py-1 rounded hover:bg-gold hover:text-white transition">+ Přidat přestávku</button>
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        {(!selectedSettings.breaks || selectedSettings.breaks.length === 0) ? (
+                                            <p className="text-sm text-gray-500 italic text-center py-2">Žádné přestávky nejsou nastaveny.</p>
+                                        ) : (
+                                            selectedSettings.breaks.map((br: any, idx: number) => (
+                                                <div key={idx} className="flex items-center gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        value={br.start} 
+                                                        onChange={(e) => updateBreak(idx, 'start', e.target.value)}
+                                                        className="w-full bg-black/50 border border-gray-600 text-white rounded p-2 focus:border-gold outline-none text-center"
+                                                        placeholder="12:00"
+                                                    />
+                                                    <span className="text-gray-500">-</span>
+                                                    <input 
+                                                        type="text" 
+                                                        value={br.end} 
+                                                        onChange={(e) => updateBreak(idx, 'end', e.target.value)}
+                                                        className="w-full bg-black/50 border border-gray-600 text-white rounded p-2 focus:border-gold outline-none text-center"
+                                                        placeholder="13:00"
+                                                    />
+                                                    <button onClick={() => removeBreak(idx)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded ml-2">
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
-
 const AdminPanel: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -110,7 +239,7 @@ const AdminPanel: React.FC = () => {
     'Sobota': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
     'Neděle': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' }
   });
-  const [closedDates, setClosedDates] = useState<string>('');
+  const [specificDatesStr, setSpecificDatesStr] = useState<string>('');
   
   // Pagination state
   const [resPage, setResPage] = useState(1);
@@ -126,8 +255,7 @@ const AdminPanel: React.FC = () => {
         if (res.ok) {
             const data = await res.json();
             if (data.clientSectionEnabled) setClientSectionEnabled(data.clientSectionEnabled);
-            if (data.openingHours) setOpeningHours(data.openingHours);
-            if (data.closedDates) setClosedDates(data.closedDates);
+            if (data.specificDates) setSpecificDatesStr(data.specificDates);
         }
     } catch (e) {
         console.error(e);
@@ -801,99 +929,16 @@ const AdminPanel: React.FC = () => {
                   </div>
 
                                     <div>
-                      <h3 className="text-xl text-white mb-6 border-b border-gray-700 pb-2">Pracovní doba a Přestávky</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                          {['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'].map((day) => (
-                              <div key={day} className="bg-black/30 p-5 rounded-xl border border-gray-600/50 flex flex-col gap-4 hover:border-gold/30 transition">
-                                  <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                                    <span className="font-bold text-lg text-white">{day}</span>
-                                    {(!openingHours[day]?.start || !openingHours[day]?.end) && (
-                                        <span className="text-xs text-red-400 font-medium bg-red-400/10 px-2 py-1 rounded">Zavřeno</span>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="flex flex-col gap-3">
-                                      <div className="flex justify-between items-center">
-                                          <span className="text-sm text-gray-400 flex items-center gap-2"><Clock size={14} className="text-gold"/> Pracovní</span>
-                                          <div className="flex items-center gap-1 bg-black/50 p-1.5 rounded-lg border border-gray-700">
-                                              <input 
-                                                type="text" 
-                                                value={openingHours[day]?.start || ''} 
-                                                onChange={(e) => updateOpeningHours(day, 'start', e.target.value)}
-                                                className="bg-transparent w-10 text-center text-white focus:outline-none focus:text-gold" 
-                                                placeholder="09:00"
-                                              />
-                                              <span className="text-gray-500">-</span>
-                                              <input 
-                                                type="text" 
-                                                value={openingHours[day]?.end || ''} 
-                                                onChange={(e) => updateOpeningHours(day, 'end', e.target.value)}
-                                                className="bg-transparent w-10 text-center text-white focus:outline-none focus:text-gold" 
-                                                placeholder="18:00"
-                                              />
-                                          </div>
-                                      </div>
-
-                                      <div className="flex flex-col gap-2">
-                                          <div className="flex justify-between items-center">
-                                              <span className="text-sm text-gray-400 flex items-center gap-2"><Coffee size={14} className="text-gold"/> Přestávka</span>
-                                              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                                                  <input 
-                                                      type="checkbox" 
-                                                      className="accent-gold"
-                                                      checked={!openingHours[day]?.breakStart && !openingHours[day]?.breakEnd}
-                                                      onChange={(e) => {
-                                                          if (e.target.checked) {
-                                                              updateOpeningHoursMulti(day, { breakStart: '', breakEnd: '' });
-                                                          } else {
-                                                              updateOpeningHoursMulti(day, { breakStart: '12:00', breakEnd: '13:00' });
-                                                          }
-                                                      }}
-                                                  />
-                                                  Bez přestávky
-                                              </label>
-                                          </div>
-                                          {(!(!openingHours[day]?.breakStart && !openingHours[day]?.breakEnd)) && (
-                                              <div className="flex items-center gap-1 bg-black/50 p-1.5 rounded-lg border border-gray-700 self-end">
-                                                  <input
-                                                     type="text"
-                                                     value={openingHours[day]?.breakStart || ''}
-                                                     onChange={(e) => updateOpeningHours(day, 'breakStart', e.target.value)}
-                                                    className="bg-transparent w-10 text-center text-white focus:outline-none focus:text-gold"
-                                                     placeholder="12:00"
-                                                  />
-                                                  <span className="text-gray-500">-</span>
-                                                  <input
-                                                     type="text"
-                                                     value={openingHours[day]?.breakEnd || ''}
-                                                     onChange={(e) => updateOpeningHours(day, 'breakEnd', e.target.value)}
-                                                    className="bg-transparent w-10 text-center text-white focus:outline-none focus:text-gold"
-                                                     placeholder="13:00"
-                                                  />
-                                              </div>
-                                          )}
-                                      </div>
-                                  </div>
-                                  <p className="text-[10px] text-gray-500 text-center mt-1">Smažte časy pro označení dne jako zavřeno</p>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-
-<div className="mt-8">
-                      <h4 className="text-xl text-white mb-6 border-b border-gray-700 pb-2">Nedostupné dny (Dovolená)</h4>
-                      <p className="text-sm text-gray-400 mb-6">Kliknutím na den v kalendáři jej označíte jako zavřeno. Zákazníci se v tyto dny nebudou moci objednat.</p>
                       
-                      <AdminCalendarPicker 
-                          closedDatesStr={closedDates} 
-                          setClosedDates={setClosedDates} 
-                          updateSetting={updateSetting} 
-                      />
-                  </div>
-
-                  
-
-                  <div className="pt-6 border-t border-gray-700">
+<h3 className="text-xl text-white mb-6 border-b border-gray-700 pb-2">Pracovní doba (Dle dnů)</h3>
+<p className="text-sm text-gray-400 mb-6">Nastavte otevírací dobu a přestávky pro konkrétní dny. Dny, které nemají nastavenou otevírací dobu, jsou považovány za zavřené.</p>
+<AdminDailySchedulePicker 
+    specificDatesStr={specificDatesStr}
+    setSpecificDatesStr={setSpecificDatesStr}
+    updateSetting={updateSetting}
+/>
+</div>
+<div className="pt-6 border-t border-gray-700">
                       <h3 className="text-xl text-white mb-6 border-b border-gray-700 pb-2">Záloha a obnova databáze</h3>
                       
                       {backupRestoreMsg && (

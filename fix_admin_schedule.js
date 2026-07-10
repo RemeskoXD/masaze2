@@ -1,11 +1,8 @@
 import fs from 'fs';
 let code = fs.readFileSync('components/AdminPanel.tsx', 'utf8');
 
-const startIdx = code.indexOf('const AdminCalendarPicker = ({');
-const endIdx = code.indexOf('const AdminPanel: React.FC = () => {');
-
-if (startIdx !== -1 && endIdx !== -1) {
-    const newPicker = `const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updateSetting }: { specificDatesStr: string, setSpecificDatesStr: (s: string) => void, updateSetting: (k: string, v: string) => void }) => {
+const newPicker = `
+const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updateSetting }: { specificDatesStr: string, setSpecificDatesStr: (s: string) => void, updateSetting: (k: string, v: string) => void }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
     
@@ -209,10 +206,8 @@ if (startIdx !== -1 && endIdx !== -1) {
     );
 };
 `;
-    
-    code = code.substring(0, startIdx) + newPicker + code.substring(endIdx);
-    fs.writeFileSync('components/AdminPanel.tsx', code);
-    console.log("Successfully replaced");
-} else {
-    console.log("Not found");
-}
+
+const oldPickerRegex = /const AdminCalendarPicker.*?\}\);\n\};/s;
+code = code.replace(oldPickerRegex, newPicker);
+
+fs.writeFileSync('components/AdminPanel.tsx', code);
