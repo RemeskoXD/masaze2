@@ -206,6 +206,15 @@ const AdminPanel: React.FC = () => {
       updateSetting('openingHours', newHours);
   };
 
+  const updateOpeningHoursMulti = (day: string, updates: Record<string, string>) => {
+      const newHours = {
+          ...openingHours,
+          [day]: { ...openingHours[day], ...updates }
+      };
+      setOpeningHours(newHours);
+      updateSetting('openingHours', newHours);
+  };
+
   const updateReservationStatus = async (id: number, status: string, reason?: string, alternativeTermin?: string) => {
     try {
         await fetch(`/api/admin/reservations/${id}`, {
@@ -835,11 +844,9 @@ const AdminPanel: React.FC = () => {
                                                       checked={!openingHours[day]?.breakStart && !openingHours[day]?.breakEnd}
                                                       onChange={(e) => {
                                                           if (e.target.checked) {
-                                                              updateOpeningHours(day, 'breakStart', '');
-                                                              updateOpeningHours(day, 'breakEnd', '');
+                                                              updateOpeningHoursMulti(day, { breakStart: '', breakEnd: '' });
                                                           } else {
-                                                              updateOpeningHours(day, 'breakStart', '12:00');
-                                                              updateOpeningHours(day, 'breakEnd', '13:00');
+                                                              updateOpeningHoursMulti(day, { breakStart: '12:00', breakEnd: '13:00' });
                                                           }
                                                       }}
                                                   />
