@@ -125,7 +125,11 @@ const ReservationSystem: React.FC = () => {
   };
 
   const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
+    if (selectedTime === time) {
+        setStep(3);
+    } else {
+        setSelectedTime(time);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -357,7 +361,7 @@ const ReservationSystem: React.FC = () => {
                                 return (
                                 <button
                                     key={service.id}
-                                    onClick={() => setSelectedService(service.id)}
+                                    onClick={() => { if (selectedService === service.id) setStep(2); else setSelectedService(service.id); }}
                                     className={`group relative flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 text-left overflow-hidden ${
                                         isSelected 
                                         ? 'border-gold bg-gold/5 shadow-md' 
@@ -388,6 +392,24 @@ const ReservationSystem: React.FC = () => {
                                 </button>
                             )})}
                         </div>
+                        <AnimatePresence>
+                            {selectedService && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, height: 0 }}
+                                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                    exit={{ opacity: 0, y: 10, height: 0 }}
+                                    className="mt-8 flex justify-end overflow-hidden"
+                                >
+                                    <button
+                                        onClick={() => setStep(2)}
+                                        className="px-8 py-3 bg-gold text-white rounded-full font-medium tracking-wide hover:bg-gold-dark transition-colors shadow-md flex items-center gap-2"
+                                    >
+                                        Pokračovat k výběru termínu
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </motion.div>
                 )}
 
@@ -446,18 +468,17 @@ const ReservationSystem: React.FC = () => {
         days.push(null);
     }
     for (let i = 1; i <= daysInMonth; i++) {
-        days.push(i);
+        days.push(new Date(d.getFullYear(), d.getMonth(), i));
     }
     return days;
 })().map((date, idx) => {
                                         if (!date) return <div key={`empty-${idx}`} className="p-2"></div>;
-                                        const dateStr = date.toISOString().split('T')[0];
+                                        const dateStr = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
                                         const isSelected = selectedDate === dateStr;
-                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                        // Simple past check (allowing today)
-                                        const todayStr = new Date().toISOString().split('T')[0];
-                                        const isPast = dateStr < todayStr;
-                                        const disabled = isWeekend || isPast;
+                                        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+const isPast = dateStr < todayStr;
+const hasSlots = generateTimeSlots(selectedService, selectedAddons, dateStr).length > 0;
+const disabled = isPast || !hasSlots;
 
                                         return (
                                             <button
@@ -526,6 +547,24 @@ const ReservationSystem: React.FC = () => {
                                             </motion.button>
                                         )})}
                                     </motion.div>
+                                    <AnimatePresence>
+                                        {selectedTime && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, height: 0 }}
+                                                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                                exit={{ opacity: 0, y: 10, height: 0 }}
+                                                className="mt-8 flex justify-end overflow-hidden"
+                                            >
+                                                <button
+                                                    onClick={() => setStep(3)}
+                                                    className="px-8 py-3 bg-gold text-white rounded-full font-medium tracking-wide hover:bg-gold-dark transition-colors shadow-md flex items-center gap-2"
+                                                >
+                                                    Pokračovat k údajům
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </motion.div>
                             )}
                         </AnimatePresence>
