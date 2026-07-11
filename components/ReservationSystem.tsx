@@ -436,6 +436,7 @@ const ReservationSystem: React.FC = () => {
                             <h3 className="text-3xl text-text-dark font-serif">
                                 Vyberte termín
                             </h3>
+                            <span className="block text-sm text-gold-dark font-medium italic">Otevírací doba po domluvě.</span>
                             <button onClick={() => goToStep(1)} className="text-sm text-text-muted hover:text-gold-dark flex items-center gap-1 transition-colors uppercase tracking-widest font-medium">
                                 <ArrowLeft size={14} /> Zpět
                             </button>

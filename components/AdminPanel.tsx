@@ -27,6 +27,44 @@ const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updat
     
     const monthNames = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
     
+    const setDefaultsForMonth = () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const days = new Date(year, month + 1, 0).getDate();
+        
+        let updated = { ...specificDates };
+
+        for (let i = 1; i <= days; i++) {
+            const d = new Date(year, month, i);
+            const dateString = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            const dayOfWeek = d.getDay(); // 0 = Sunday, 6 = Saturday
+            
+            let isOpen = true;
+            let start = '08:30';
+            let end = '18:00';
+            let breaks = [];
+            
+            if (dayOfWeek === 6) {
+                isOpen = false;
+            } else if (dayOfWeek === 0) {
+                start = '09:00';
+                end = '20:00';
+            } else if (dayOfWeek === 5) {
+                start = '08:30';
+                end = '11:30';
+            } else {
+                start = '08:30';
+                end = '18:00';
+            }
+            
+            updated[dateString] = { isOpen, start, end, breaks };
+        }
+        
+        const updatedStr = JSON.stringify(updated);
+        setSpecificDatesStr(updatedStr);
+        updateSetting('specificDates', updatedStr);
+    };
+
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
@@ -68,9 +106,17 @@ const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updat
                     <button onClick={prevMonth} className="p-2 hover:bg-gold/20 hover:text-gold rounded transition text-gray-400">
                         <ChevronLeft size={20} />
                     </button>
-                    <h4 className="text-xl font-bold text-white tracking-wider">
-                        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                    </h4>
+                    <div className="flex flex-col items-center gap-2">
+                        <h4 className="text-xl font-bold text-white tracking-wider">
+                            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        </h4>
+                        <button 
+                            onClick={setDefaultsForMonth} 
+                            className="text-xs text-gold border border-gold/50 px-3 py-1 rounded hover:bg-gold hover:text-deep-green transition"
+                        >
+                            Nastavit defaultní pro tento měsíc
+                        </button>
+                    </div>
                     <button onClick={nextMonth} className="p-2 hover:bg-gold/20 hover:text-gold rounded transition text-gray-400">
                         <ChevronRight size={20} />
                     </button>
