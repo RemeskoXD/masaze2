@@ -133,12 +133,35 @@ const app = express();
 
   
   // --- REVIEWS API ---
+
+  app.get('/api/db-test', async (req, res) => {
+    try {
+      const connection = await pool.getConnection();
+      connection.release();
+      res.json({ success: true, message: 'DB connection successful!' });
+    } catch (e) {
+      console.error('/api/db-test Error:', e);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to connect to DB', 
+        error: e.message,
+        code: e.code,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        user: process.env.DB_USER,
+        database: process.env.DB_NAME,
+        hasPassword: !!process.env.DB_PASSWORD
+      });
+    }
+  });
+
   app.get('/api/reviews', async (req, res) => {
     try {
       const [rows]: any = await pool.query('SELECT * FROM reviews ORDER BY id DESC');
       res.json(rows);
     } catch (e) {
-      res.status(500).json({ error: 'DB error' });
+      console.error('/api/reviews DB Error:', e);
+      res.status(500).json({ error: 'DB error', details: e.message || String(e) });
     }
   });
 
@@ -177,8 +200,8 @@ const app = express();
       const settings = Array.isArray(rows) ? rows.reduce((acc: any, row: any) => ({ ...acc, [row.setting_key]: row.setting_value }), { clientSectionEnabled: false }) : { clientSectionEnabled: false };
       res.json(settings);
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ success: false, message: 'DB Error' });
+      console.error('/api/settings DB Error:', e);
+      res.status(500).json({ success: false, message: 'DB Error', details: e.message || String(e) });
     }
   });
 
