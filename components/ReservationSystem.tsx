@@ -52,11 +52,10 @@ const ReservationSystem: React.FC = () => {
           const data = await res.json();
           if (data.specificDates) {
             try {
-              if (typeof data.specificDates === 'string') {
-                setSpecificDates(JSON.parse(data.specificDates));
-              } else {
-                setSpecificDates(data.specificDates);
-              }
+              let parsed = data.specificDates;
+              if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+              if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+              setSpecificDates(parsed || {});
             } catch(e){}
           }
         }
@@ -277,7 +276,10 @@ const ReservationSystem: React.FC = () => {
             <div className="h-px w-8 bg-gold/50"></div>
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-text-dark mb-6">Rezervujte si svůj čas</h2>
-          <p className="text-text-muted max-w-xl mx-auto font-light text-lg">Vyberte si proceduru a termín, který Vám nejvíce vyhovuje. Vše jednoduše a elegantně online.</p>
+          <p className="text-text-muted max-w-xl mx-auto font-light text-lg mb-3">Vyberte si proceduru a termín, který Vám nejvíce vyhovuje. Vše jednoduše a elegantně online.</p>
+          <div className="inline-block bg-gold/10 text-gold-dark px-4 py-2 rounded-full text-sm font-medium tracking-wide">
+            Otevírací doba po domluvě
+          </div>
         </motion.div>
 
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">

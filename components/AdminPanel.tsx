@@ -5,14 +5,16 @@ import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, Refre
 import { motion, AnimatePresence } from 'motion/react';
 
 
-const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updateSetting }: { specificDatesStr: string, setSpecificDatesStr: (s: string) => void, updateSetting: (k: string, v: string) => void }) => {
+const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updateSetting }: { specificDatesStr: string, setSpecificDatesStr: (s: string) => void, updateSetting: (k: string, v: any) => Promise<boolean> | void }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
     
     let specificDates = {};
     try {
         if (typeof specificDatesStr === 'string') {
-            specificDates = specificDatesStr ? JSON.parse(specificDatesStr) : {};
+            let parsed = specificDatesStr ? JSON.parse(specificDatesStr) : {};
+            if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+            specificDates = parsed;
         } else if (typeof specificDatesStr === 'object') {
             specificDates = specificDatesStr;
         }
@@ -62,7 +64,6 @@ const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updat
         
         const updatedStr = JSON.stringify(updated);
         setSpecificDatesStr(updatedStr);
-        updateSetting('specificDates', updatedStr);
     };
 
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -75,7 +76,6 @@ const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updat
         const updated = { ...specificDates, [selectedDateStr]: newSettings };
         const updatedStr = JSON.stringify(updated);
         setSpecificDatesStr(updatedStr);
-        updateSetting('specificDates', updatedStr);
     };
 
     const toggleOpen = (checked: boolean) => {
@@ -99,6 +99,23 @@ const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updat
         saveDaySettings({ ...selectedSettings, breaks });
     };
 
+    const handleSaveToServer = async () => {
+        try {
+            // First let's make sure we have the correct string representation
+            const strToSave = typeof specificDatesStr === 'object' ? JSON.stringify(specificDatesStr) : specificDatesStr;
+            // Send exactly the string to keep compatibility with double stringified or not
+            const success = await updateSetting('specificDates', strToSave || "");
+            if (success !== false) {
+                alert('Změny v kalendáři byly úspěšně uloženy do databáze.');
+            } else {
+                alert('Chyba při ukládání do databáze.');
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Chyba při ukládání.');
+        }
+    };
+    
     return (
         <div className="flex flex-col lg:flex-row gap-6 items-start">
             <div className="bg-black/40 border border-gray-600/50 rounded-xl p-6 w-full max-w-md">
@@ -161,6 +178,16 @@ const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updat
                 <div className="mt-6 flex flex-col gap-2 text-sm text-gray-400">
                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-400"></div> Otevřeno (nastaveno)</div>
                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-900/20"></div> Zavřeno (nenastaveno)</div>
+                </div>
+                
+                <div className="mt-8 pt-6 border-t border-gray-600/50">
+                    <button 
+                        onClick={handleSaveToServer}
+                        className="w-full bg-gold hover:bg-gold-dark text-white font-bold py-3 px-4 rounded transition flex items-center justify-center gap-2 shadow-lg"
+                    >
+                        <Check size={20} />
+                        Uložit změny v kalendáři na server
+                    </button>
                 </div>
             </div>
 
@@ -358,7 +385,7 @@ const AdminPanel: React.FC = () => {
 
   const updateSetting = async (key: string, value: any) => {
     try {
-        await fetch('/api/admin/settings', {
+        const res = await fetch('/api/admin/settings', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -366,8 +393,14 @@ const AdminPanel: React.FC = () => {
             },
             body: JSON.stringify({ [key]: value })
         });
+        if (!res.ok) {
+            console.error('Failed to update setting', await res.text());
+            return false;
+        }
+        return true;
     } catch (e) {
         console.error(e);
+        return false;
     }
   };
 
