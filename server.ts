@@ -69,12 +69,14 @@ function getPriceForService(serviceName: string): number {
 
 
 // --- MySQL Database ---
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+const pool = process.env.DATABASE_URL 
+? mysql.createPool(process.env.DATABASE_URL)
+: mysql.createPool({
+  host: process.env.DB_HOST || process.env.MYSQL_HOST,
+  port: Number(process.env.DB_PORT || process.env.MYSQL_PORT) || 3306,
+  user: process.env.DB_USER || process.env.DB_USERNAME || process.env.MYSQL_USER,
+  password: process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD,
+  database: process.env.DB_NAME || process.env.DB_DATABASE || process.env.MYSQL_DATABASE || process.env.MYSQL_DB || process.env.DB_SCHEMA,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -133,6 +135,23 @@ const app = express();
 
   
   // --- REVIEWS API ---
+
+
+  app.get('/api/env-debug', async (req, res) => {
+    res.json({
+      has_DB_HOST: !!process.env.DB_HOST,
+      has_MYSQL_HOST: !!process.env.MYSQL_HOST,
+      has_DB_USER: !!process.env.DB_USER,
+      has_MYSQL_USER: !!process.env.MYSQL_USER,
+      has_DB_NAME: !!process.env.DB_NAME,
+      has_DB_DATABASE: !!process.env.DB_DATABASE,
+      has_MYSQL_DATABASE: !!process.env.MYSQL_DATABASE,
+      has_DATABASE_URL: !!process.env.DATABASE_URL,
+      DB_NAME_VALUE: process.env.DB_NAME || null,
+      DB_DATABASE_VALUE: process.env.DB_DATABASE || null,
+      MYSQL_DATABASE_VALUE: process.env.MYSQL_DATABASE || null
+    });
+  });
 
   app.get('/api/db-test', async (req, res) => {
     try {
