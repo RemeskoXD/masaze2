@@ -29,6 +29,15 @@ const ReservationSystem: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [specificDates, setSpecificDates] = useState<any>({});
+  const [openingHours, setOpeningHours] = useState<any>({
+    'Pondělí': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Úterý': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Středa': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Čtvrtek': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Pátek': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Sobota': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
+    'Neděle': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' }
+  });
   
   useEffect(() => {
     const handleSelectService = (e: any) => {
