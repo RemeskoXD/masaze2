@@ -58,6 +58,16 @@ const ReservationSystem: React.FC = () => {
               setSpecificDates(parsed || {});
             } catch(e){}
           }
+          if (data.openingHours) {
+            try {
+              let parsedOh = data.openingHours;
+              if (typeof parsedOh === 'string') parsedOh = JSON.parse(parsedOh);
+              if (typeof parsedOh === 'string') parsedOh = JSON.parse(parsedOh);
+              if (parsedOh && typeof parsedOh === 'object') {
+                 setOpeningHours(parsedOh);
+              }
+            } catch(e){}
+          }
         }
       } catch (e) { console.log(e); }
     };
@@ -67,7 +77,27 @@ const ReservationSystem: React.FC = () => {
     const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
     if (!serviceId || !dateStr) return [];
     
-    const settings = specificDates[dateStr];
+    const d = new Date(dateStr);
+    const daysOfWeek = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
+    const dayName = daysOfWeek[d.getDay()];
+    
+    let settings = specificDates[dateStr];
+    
+    if (!settings) {
+        const oh = openingHours[dayName];
+        if (oh) {
+            // Check if it's explicitly closed. If it has start and end but we don't have "isOpen" property, we consider it open unless it's missing
+            if (oh.start && oh.end) {
+                settings = {
+                    isOpen: true,
+                    start: oh.start,
+                    end: oh.end,
+                    breaks: (oh.breakStart && oh.breakEnd) ? [{start: oh.breakStart, end: oh.breakEnd}] : []
+                };
+            }
+        }
+    }
+    
     if (!settings || !settings.isOpen || !settings.start || !settings.end) return [];
 
     const service = SERVICES_LIST.find(s => s.id === serviceId);

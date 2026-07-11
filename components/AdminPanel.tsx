@@ -329,6 +329,14 @@ const AdminPanel: React.FC = () => {
             const data = await res.json();
             if (data.clientSectionEnabled) setClientSectionEnabled(data.clientSectionEnabled);
             if (data.specificDates) setSpecificDatesStr(data.specificDates);
+            if (data.openingHours) {
+                try {
+                    let oh = data.openingHours;
+                    if (typeof oh === 'string') oh = JSON.parse(oh);
+                    if (typeof oh === 'string') oh = JSON.parse(oh);
+                    if (oh && typeof oh === 'object') setOpeningHours(oh);
+                } catch(e) {}
+            }
         }
     } catch (e) {
         console.error(e);
