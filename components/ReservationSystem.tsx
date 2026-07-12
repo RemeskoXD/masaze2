@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 
 
+const getNumericPrice = (p?: string | number) => typeof p === 'string' ? parseInt(p.replace(/[^\d]/g, '')) || 0 : (p as number) || 0;
 const ReservationSystem: React.FC = () => {
   const [step, setStep] = useState(1);
   const goToStep = (newStep: number) => { setStep(newStep); setTimeout(() => { const el = document.getElementById('reservation'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 100; window.scrollTo({top: y, behavior: 'smooth'}); } }, 50); };
@@ -20,8 +21,37 @@ const ReservationSystem: React.FC = () => {
     note: '',
     website: '' // Honeypot field
   });
+  
   const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voucherCodeInput, setVoucherCodeInput] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [voucherError, setVoucherError] = useState('');
+  const [voucherSuccess, setVoucherSuccess] = useState('');
+
+  const validateVoucher = async () => {
+      setVoucherError('');
+      setVoucherSuccess('');
+      if (!voucherCodeInput.trim()) return;
+      try {
+          const res = await fetch('/api/voucher/validate', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ code: voucherCodeInput.trim() })
+          });
+          const data = await res.json();
+          if (data.success) {
+              setAppliedVoucher(data.voucher);
+              setVoucherSuccess('Poukaz úspěšně uplatněn');
+          } else {
+              setVoucherError(data.message);
+              setAppliedVoucher(null);
+          }
+      } catch(e) {
+          setVoucherError('Chyba při ověřování poukazu');
+      }
+  };
+
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -91,21 +121,6 @@ const ReservationSystem: React.FC = () => {
     const dayName = daysOfWeek[d.getDay()];
     
     let settings = specificDates[dateStr];
-    
-    if (!settings) {
-        const oh = openingHours[dayName];
-        if (oh) {
-            // Check if it's explicitly closed. If it has start and end but we don't have "isOpen" property, we consider it open unless it's missing
-            if (oh.start && oh.end) {
-                settings = {
-                    isOpen: true,
-                    start: oh.start,
-                    end: oh.end,
-                    breaks: (oh.breakStart && oh.breakEnd) ? [{start: oh.breakStart, end: oh.breakEnd}] : []
-                };
-            }
-        }
-    }
     
     if (!settings || !settings.isOpen || !settings.start || !settings.end) return [];
 
@@ -641,17 +656,77 @@ const disabled = isPast || !hasSlots;
                              </button>
                          </div>
                         
+
                         {/* Summary Card */}
-                        <div className="bg-[#FAF7F5] border border-[#E8DCCB] p-6 rounded-2xl mb-8 flex flex-col sm:flex-row gap-6 sm:gap-12 text-sm">
-                            <div>
-                                <span className="block text-text-muted text-xs uppercase tracking-widest mb-1">Vybraná služba</span>
-                                <span className="text-text-dark font-serif text-xl">{SERVICES_LIST.find(s => s.id === selectedService)?.title}</span>
+                        <div className="bg-[#FAF7F5] border border-[#E8DCCB] p-6 rounded-2xl mb-8 flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-12 text-sm">
+                            <div className="flex gap-6 sm:gap-12">
+                                <div>
+                                    <span className="block text-text-muted text-xs uppercase tracking-widest mb-1">Vybraná služba</span>
+                                    <span className="text-text-dark font-serif text-xl">{SERVICES_LIST.find(s => s.id === selectedService)?.title}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-text-muted text-xs uppercase tracking-widest mb-1">Termín</span>
+                                    <span className="text-text-dark font-serif text-xl">{new Date(selectedDate!).toLocaleDateString('cs-CZ')} v {selectedTime}</span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="block text-text-muted text-xs uppercase tracking-widest mb-1">Termín</span>
-                                <span className="text-text-dark font-serif text-xl">{new Date(selectedDate!).toLocaleDateString('cs-CZ')} v {selectedTime}</span>
+                            
+                            <div className="text-right">
+                                <span className="block text-text-muted text-xs uppercase tracking-widest mb-1">Celková cena</span>
+                                <span className="text-gold font-serif text-2xl font-bold">
+                                    {(() => {
+                                        const service = SERVICES_LIST.find(s => s.id === selectedService);
+                                        let price = getNumericPrice(service?.price);
+                                        price += selectedAddons.reduce((acc, a) => acc + getNumericPrice(SERVICES_LIST.find(x => x.id === a)?.price), 0);
+                                        
+                                        if (appliedVoucher) {
+                                            if (appliedVoucher.type === 'value') {
+                                                price = Math.max(0, price - appliedVoucher.value);
+                                            } else if (appliedVoucher.type === 'service') {
+                                                price = 0;
+                                            }
+                                        }
+                                        return price + ' Kč';
+                                    })()}
+                                </span>
                             </div>
                         </div>
+                        
+                        <div className="mb-8 p-6 bg-white border border-[#E8DCCB] rounded-2xl shadow-sm">
+                            <h4 className="text-sm font-medium text-text-dark uppercase tracking-widest mb-4">Máte dárkový poukaz?</h4>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <input 
+                                    type="text" 
+                                    placeholder="Zadejte kód poukazu (např. TR-123456)" 
+                                    value={voucherCodeInput}
+                                    onChange={e => setVoucherCodeInput(e.target.value)}
+                                    className="flex-1 bg-transparent border-b border-gold/30 py-2 text-text-dark focus:border-gold outline-none transition-colors"
+                                    disabled={!!appliedVoucher}
+                                />
+                                {!appliedVoucher ? (
+                                    <button 
+                                        type="button" 
+                                        onClick={validateVoucher}
+                                        className="bg-gold/10 text-gold hover:bg-gold hover:text-white px-6 py-2 rounded transition-colors font-medium text-sm"
+                                    >
+                                        Ověřit kód
+                                    </button>
+                                ) : (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { setAppliedVoucher(null); setVoucherCodeInput(''); setVoucherSuccess(''); }}
+                                        className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-6 py-2 rounded transition-colors font-medium text-sm"
+                                    >
+                                        Zrušit poukaz
+                                    </button>
+                                )}
+                            </div>
+                            {voucherError && <p className="text-red-500 text-xs mt-2">{voucherError}</p>}
+                            {voucherSuccess && <p className="text-green-600 text-xs mt-2">{voucherSuccess}</p>}
+                            {appliedVoucher && appliedVoucher.type === 'value' && (
+                                <p className="text-text-muted text-xs mt-2 italic">Z hodnoty poukazu bude odečtena příslušná částka. Zbylá hodnota zůstane na poukazu pro další použití.</p>
+                            )}
+                        </div>
+
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

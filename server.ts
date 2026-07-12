@@ -72,8 +72,15 @@ function getPriceForService(serviceName: string): number {
 
 let dbName = process.env.DB_NAME || process.env.DB_DATABASE || process.env.MYSQL_DATABASE;
 if (!dbName && process.env.DATABASE_URL) {
-    const match = process.env.DATABASE_URL.match(/\/([^/?]+)(\?|$)/);
-    if (match) dbName = match[1];
+    try {
+        const urlObj = new URL(process.env.DATABASE_URL.replace('mysql://', 'http://'));
+        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+        if (pathSegments.length > 0) {
+            dbName = pathSegments[pathSegments.length - 1];
+        }
+    } catch(e) {
+        console.error("Failed to parse DATABASE_URL");
+    }
 }
 if (!dbName) {
     dbName = process.env.DB_USER; // Fallback to user if name is missing (common in shared hosting)
@@ -98,7 +105,7 @@ async function initDB() {
     await connection.query("CREATE TABLE IF NOT EXISTS settings (setting_key VARCHAR(50) PRIMARY KEY, setting_value JSON) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
     await connection.query("CREATE TABLE IF NOT EXISTS reviews (id INT AUTO_INCREMENT PRIMARY KEY, author VARCHAR(100) NOT NULL, rating INT NOT NULL DEFAULT 5, text TEXT NOT NULL, date VARCHAR(20) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
     await connection.query("CREATE TABLE IF NOT EXISTS reservations (id INT AUTO_INCREMENT PRIMARY KEY, serviceId INT NOT NULL, date VARCHAR(20) NOT NULL, time VARCHAR(10) NOT NULL, customerName VARCHAR(100) NOT NULL, phone VARCHAR(50) NOT NULL, email VARCHAR(100) NOT NULL, note TEXT, totalPrice INT NOT NULL, status VARCHAR(20) DEFAULT 'Nová', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-    await connection.query("CREATE TABLE IF NOT EXISTS vouchers (id INT AUTO_INCREMENT PRIMARY KEY, voucherType VARCHAR(50) NOT NULL, amount INT NOT NULL, recipientName VARCHAR(100) NOT NULL, buyerName VARCHAR(100) NOT NULL, buyerEmail VARCHAR(100) NOT NULL, buyerPhone VARCHAR(50) NOT NULL, personalMessage TEXT, deliveryMethod VARCHAR(20) NOT NULL, shippingAddress TEXT, status VARCHAR(20) DEFAULT 'Nový', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    await connection.query("CREATE TABLE IF NOT EXISTS vouchers (id BIGINT PRIMARY KEY, type VARCHAR(50), value INT, service VARCHAR(100), summary VARCHAR(255), amount INT NOT NULL, recipientName VARCHAR(100) NOT NULL, senderName VARCHAR(100), email VARCHAR(100), note TEXT, status VARCHAR(20) DEFAULT 'paid', voucherCode VARCHAR(50), createdAt VARCHAR(50), validUntil VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     connection.release();
     console.log('Database tables verified/initialized successfully.');
@@ -133,7 +140,8 @@ const app = express();
 
   // Basic admin authentication middleware for /api/admin/* routes
   const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(' ')[1] || req.query.token;
+    console.log('requireAdmin check: ', { path: req.path, tokenPassed: !!token, matched: token === process.env.ADMIN_TOKEN });
     if (token === process.env.ADMIN_TOKEN) {
       next();
     } else {
@@ -195,9 +203,32 @@ const app = express();
     }
   });
 
+  
+  app.post('/api/voucher/validate', async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ success: false, message: 'Chybí kód poukazu' });
+      
+      const [rows]: any = await pool.query('SELECT * FROM vouchers WHERE voucherCode = ? AND status = ?', [code, 'paid']);
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Poukaz nenalezen nebo již byl vyčerpán/stornován.' });
+      }
+      
+      const voucher = rows[0];
+      if (voucher.type === 'value' && voucher.value <= 0) {
+        return res.status(400).json({ success: false, message: 'Tento poukaz již byl vyčerpán.' });
+      }
+      
+      res.json({ success: true, voucher: { id: voucher.id, type: voucher.type, value: voucher.value, service: voucher.service } });
+    } catch (error) {
+      console.error('/api/voucher/validate error:', error);
+      res.status(500).json({ success: false, message: 'Chyba serveru' });
+    }
+  });
+
   app.post('/api/reservation', async (req, res) => {
     try {
-      let { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs, website } = req.body;
+      let { serviceId, date, time, customerName, phone, email, note, totalPrice, surnameClean, vs, website, appliedVoucherCode } = req.body;
       totalPrice = Math.max(0, Number(totalPrice) || 0);
       customerName = String(customerName || '').substring(0, 100).trim();
       phone = String(phone || '').substring(0, 50).trim();
@@ -216,8 +247,30 @@ const app = express();
 
       const connection = await pool.getConnection();
       let resId;
+      let usedVoucherVal = 0;
+      let finalPrice = totalPrice || 0;
+      
       try {
         await connection.beginTransaction();
+
+        if (appliedVoucherCode) {
+          const [vRows]: any = await connection.query('SELECT * FROM vouchers WHERE voucherCode = ? AND status = ? FOR UPDATE', [appliedVoucherCode, 'paid']);
+          if (vRows.length > 0) {
+            const voucher = vRows[0];
+            if (voucher.type === 'value' && voucher.value > 0) {
+              const deduct = Math.min(finalPrice, voucher.value);
+              usedVoucherVal = deduct;
+              finalPrice -= deduct;
+              const remainingVal = voucher.value - deduct;
+              await connection.query('UPDATE vouchers SET value = ?, status = ? WHERE id = ?', [remainingVal, remainingVal <= 0 ? 'used' : 'paid', voucher.id]);
+            } else if (voucher.type === 'service' && voucher.service === req.body.serviceName) {
+              // Service voucher makes it fully free
+              finalPrice = 0;
+              await connection.query('UPDATE vouchers SET status = ? WHERE id = ?', ['used', voucher.id]);
+            }
+          }
+        }
+
 
         // ZAMKNE záznamy pro daný datum a čas, takže žádný jiný request nemůže tento termín zarezervovat
         const [existing]: any = await connection.query(
@@ -234,7 +287,7 @@ const app = express();
         await connection.query(
           `INSERT INTO reservations (id, serviceId, date, time, customerName, phone, email, note, totalPrice, vs, status, createdAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [resId, serviceId, date, time, customerName, phone, email, note || '', totalPrice || 0, vs || '', 'pending', new Date().toISOString()]
+          [resId, serviceId, date, time, customerName, phone, email, note || '', finalPrice, vs || '', req.body.isAdminManual ? 'confirmed' : 'pending', new Date().toISOString()]
         );
 
         await connection.commit();
@@ -326,7 +379,7 @@ const app = express();
         `
       };
 
-      if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+      if (process.env.SMTP_HOST && process.env.SMTP_USER && !req.body.isAdminManual) {
         try {
           await transporter.sendMail(adminMailOptions);
           await transporter.sendMail(customerMailOptions);
@@ -356,9 +409,8 @@ const app = express();
 
       const vId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
       await pool.query(
-        `INSERT INTO vouchers (id, type, value, service, summary, amount, recipientName, senderName, email, note, status, voucherCode, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [vId, type, type === 'value' ? parseInt(value) : null, type === 'service' ? service : null, summary, amount, recipientName, senderName, email, note || '', 'pending', '', new Date().toISOString()]
+        `INSERT INTO vouchers (id, type, value, service, summary, amount, recipientName, senderName, email, note, status, voucherCode, createdAt, validUntil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [vId, type, type === 'value' ? parseInt(value) : null, type === 'service' ? service : null, summary, amount, recipientName, senderName, email, note || '', 'pending', '', new Date().toISOString(), new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString()]
       );
       
       const newVoucher = {
@@ -461,6 +513,214 @@ const app = express();
     } catch (error) {
       console.error(error);
       res.status(500).json({ success: false, message: 'Chyba serveru při načítání' });
+    }
+  });
+
+  
+  app.post('/api/admin/voucher', requireAdmin, async (req, res) => {
+    try {
+      const { type, value, service, summary, amount, recipientName, senderName, email, note, code } = req.body;
+      
+      const vId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+      let finalCode = code;
+      if (!finalCode) {
+        finalCode = 'TR-' + Math.floor(100000 + Math.random() * 900000).toString();
+      }
+
+      await pool.query(
+        `INSERT INTO vouchers (id, type, value, service, summary, amount, recipientName, senderName, email, note, status, voucherCode, createdAt, validUntil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [vId, type, type === 'value' ? parseInt(value) : null, type === 'service' ? service : null, summary, amount || 0, recipientName, senderName || 'Admin', email || '', note || '', 'paid', finalCode, new Date().toISOString(), req.body.validUntil || new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString()]
+      );
+
+      const [rows]: any = await pool.query('SELECT * FROM vouchers WHERE id = ?', [vId]);
+      res.json({ success: true, voucher: rows[0] });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Chyba při vytváření poukazu' });
+    }
+  });
+
+  app.get('/api/admin/voucher/:id/print', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [rows]: any = await pool.query('SELECT * FROM vouchers WHERE id = ?', [parseInt(id as string)]);
+      if (rows.length === 0) return res.status(404).send('Not found');
+      
+      const voucher = rows[0];
+      
+      let validUntilText = "";
+      if (voucher.validUntil) {
+          const validDate = new Date(voucher.validUntil);
+          if (!isNaN(validDate.getTime())) {
+              validUntilText = "PLATNOST DO: " + validDate.toLocaleDateString('cs-CZ');
+          } else {
+              validUntilText = "PLATNOST DO: " + voucher.validUntil;
+          }
+      }
+      
+      const html = `
+      <!DOCTYPE html>
+      <html lang="cs">
+      <head>
+          <meta charset="UTF-8">
+          <title>Dárkový Poukaz - ${voucher.voucherCode}</title>
+          <style>
+              body { margin: 0; padding: 0; background: #525659; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Arial', sans-serif; }
+              
+              .print-area { 
+                  width: 297mm; 
+                  height: 210mm; 
+                  background-color: white; 
+                  position: relative; 
+                  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                  overflow: hidden;
+              }
+              
+              @media print {
+                  @page { size: A4 landscape; margin: 0; }
+                  body { background: white; padding: 0; align-items: flex-start; justify-content: flex-start; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                  .print-area { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                  .print-area { box-shadow: none; width: 100vw; height: 100vh; page-break-after: avoid; }
+                  .no-print { display: none !important; }
+              }
+              
+              .bg-image {
+                  position: absolute;
+                  top: 0; left: 0; width: 100%; height: 100%;
+                  background-image: url('/poukaz.jpeg');
+                  background-size: cover;
+                  background-repeat: no-repeat;
+                  background-position: center;
+                  z-index: 1;
+              }
+              
+              .text-overlay {
+                  position: absolute;
+                  z-index: 2;
+                  color: #513123;
+                  font-family: 'Georgia', serif;
+                  font-style: italic;
+                  font-size: 28pt;
+                  white-space: nowrap;
+              }
+              
+              .text-recipient {
+                  top: 45.2%; 
+                  left: 33%;
+              }
+              
+              .text-value {
+                  top: 66%; 
+                  left: 20%;
+              }
+              
+              .text-validity {
+                  bottom: 2%;
+                  left: 20%;
+                  font-size: 14pt;
+                  font-family: 'Arial', sans-serif;
+                  font-style: normal;
+                  font-weight: bold;
+                  color: #7b624d;
+              }
+              
+              .text-code {
+                  bottom: 7%; 
+                  right: 5%;
+                  font-size: 14pt;
+                  font-family: 'Courier New', monospace;
+                  font-style: normal;
+                  color: #111; 
+                  font-weight: bold;
+              }
+              
+              .controls { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
+              .btn { padding: 10px 20px; background: #113f28; color: #d4af37; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: 'Arial', sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s; }
+              .btn:hover { background: #1c5e3f; transform: translateY(-2px); }
+          </style>
+      </head>
+      <body>
+          <div class="controls no-print">
+              <button class="btn" onclick="window.print()">Vytisknout / Uložit jako PDF</button>
+              <button class="btn" style="background: #e2e8f0; color: #475569;" onclick="window.close()">Zavřít</button>
+          </div>
+          
+          <div class="print-area">
+              <div class="bg-image"></div>
+              <div class="text-overlay text-recipient">${voucher.recipientName}</div>
+              <div class="text-overlay text-value">${voucher.summary}</div>
+              ${validUntilText ? `<div class="text-overlay text-validity">${validUntilText}</div>` : ''}
+              <div class="text-overlay text-code">${voucher.voucherCode}</div>
+          </div>
+          <script>
+            setTimeout(() => {
+                window.print();
+            }, 500);
+          </script>
+      </body>
+      </html>
+      `;
+      res.send(html);
+    } catch (err) {
+      res.status(500).send('Error');
+    }
+  });
+
+  
+  app.post('/api/admin/voucher/:id/use', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amountToDeduct } = req.body;
+      
+      const [rows]: any = await pool.query('SELECT * FROM vouchers WHERE id = ?', [parseInt(id)]);
+      if (rows.length === 0) return res.status(404).json({ success: false, message: 'Not found' });
+      
+      const voucher = rows[0];
+      
+      if (voucher.type === 'service' || voucher.type === 'manual') {
+          // 'manual' type without explicit value handling can also just be marked as used
+          // Wait, 'manual' might be a value voucher. We should allow marking it as used.
+          if (amountToDeduct > 0 && voucher.value > 0) {
+              const newVal = voucher.value - amountToDeduct;
+              if (newVal <= 0) {
+                  await pool.query('UPDATE vouchers SET status = ?, value = ? WHERE id = ?', ['used', 0, parseInt(id)]);
+              } else {
+                  await pool.query('UPDATE vouchers SET value = ? WHERE id = ?', [newVal, parseInt(id)]);
+              }
+          } else {
+              await pool.query('UPDATE vouchers SET status = ? WHERE id = ?', ['used', parseInt(id)]);
+          }
+      } else if (voucher.type === 'value') {
+          if (amountToDeduct > 0) {
+              const newVal = voucher.value - amountToDeduct;
+              if (newVal <= 0) {
+                  await pool.query('UPDATE vouchers SET status = ?, value = ? WHERE id = ?', ['used', 0, parseInt(id)]);
+              } else {
+                  await pool.query('UPDATE vouchers SET value = ? WHERE id = ?', [newVal, parseInt(id)]);
+              }
+          } else {
+              await pool.query('UPDATE vouchers SET status = ? WHERE id = ?', ['used', parseInt(id)]);
+          }
+      } else {
+          await pool.query('UPDATE vouchers SET status = ? WHERE id = ?', ['used', parseInt(id)]);
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Chyba' });
+    }
+  });
+
+  
+  app.delete('/api/admin/voucher/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await pool.query('DELETE FROM vouchers WHERE id = ?', [parseInt(id)]);
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Chyba' });
     }
   });
 
@@ -604,7 +864,7 @@ reservation.time = newTime;
                       <strong>TEREZA ROZKOŠNÁ — MASÁŽE & REGENERACE</strong><br>
                       ZÁMEK NAČERADEC, 257 08<br>
                       TEL: ${PHONE_NUMBER}<br>
-                      celkovazdravi@gmail.com
+                      zameckemasaze@seznam.cz
                     </div>
                   </div>
 
@@ -688,6 +948,24 @@ reservation.time = newTime;
 
   app.post('/api/admin/restore', requireAdmin, async (req, res) => {
     res.status(400).json({ success: false, message: 'Obnova ze zálohy je při použití MySQL databáze vypnutá. Kontaktujte správce databáze.' });
+  });
+
+  app.put('/api/admin/reservation/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { serviceId, date, time, customerName, phone, email, note, totalPrice } = req.body;
+      const [result]: any = await pool.query(
+        'UPDATE reservations SET serviceId = ?, date = ?, time = ?, customerName = ?, phone = ?, email = ?, note = ?, totalPrice = ? WHERE id = ?',
+        [serviceId, date, time, customerName, phone, email, note, totalPrice, parseInt(id as string)]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: 'Nenalezeno' });
+      }
+      res.json({ success: true });
+    } catch (e) {
+      console.error('/api/admin/reservation/:id PUT Error:', e);
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
   });
 
   app.post('/api/admin/reservation/:id/status', requireAdmin, async (req, res) => {

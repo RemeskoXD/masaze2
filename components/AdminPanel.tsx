@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { SERVICES_LIST } from '../constants';
 import { ReservationStatus, Service } from '../types';
-import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift, ChevronLeft, ChevronRight, Download, UploadCloud, Coffee } from 'lucide-react';
+import { Settings, Calendar, LogOut, Check, X, Clock, DollarSign, Loader2, RefreshCw, CheckCircle, ShieldAlert, Mail, Gift, Plus, Trash, ChevronLeft, ChevronRight, Download, UploadCloud, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ReservationCalendar from './ReservationCalendar';
+import { Calendar as CalendarIcon, List as ListIcon } from 'lucide-react';
+import ManualReservationModal from './ManualReservationModal';
 
 
 const AdminDailySchedulePicker = ({ specificDatesStr, setSpecificDatesStr, updateSetting }: { specificDatesStr: string, setSpecificDatesStr: (s: string) => void, updateSetting: (k: string, v: any) => Promise<boolean> | void }) => {
@@ -296,13 +299,68 @@ const AdminPanel: React.FC = () => {
   const [password, setPassword] = useState('');
   const [adminToken, setAdminToken] = useState(''); 
   const [loginError, setLoginError] = useState('');
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   
   const [reservations, setReservations] = useState<any[]>([]);
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [services, setServices] = useState<Service[]>(SERVICES_LIST); 
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'reservations' | 'settings' | 'prices' | 'vouchers'>('reservations');
+  const [reservationView, setReservationView] = useState<'list' | 'calendar'>('calendar');
   const [clientSectionEnabled, setClientSectionEnabled] = useState(false);
+
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [printVoucher, setPrintVoucher] = useState<any>(null);
+  const [voucherTab, setVoucherTab] = useState('active');
+  const [useVoucherModal, setUseVoucherModal] = useState(null);
+  const [useVoucherAmount, setUseVoucherAmount] = useState('');
+  const [newVoucher, setNewVoucher] = useState({
+      type: 'value',
+      value: '',
+      service: '',
+      summary: '',
+      recipientName: '',
+      senderName: 'Tereza Rozkošná',
+      note: '',
+      voucherCode: '',
+      validUntil: ''
+  });
+  
+  const createManualVoucher = async () => {
+      try {
+          const payload = {
+              type: newVoucher.type,
+              value: newVoucher.type === 'value' ? parseInt(newVoucher.value) || 0 : 0,
+              service: newVoucher.type === 'service' ? newVoucher.service : '',
+              summary: newVoucher.summary || 'Dárkový poukaz',
+              recipientName: newVoucher.recipientName,
+              senderName: newVoucher.senderName,
+              note: newVoucher.note,
+              amount: newVoucher.type === 'value' ? parseInt(newVoucher.value) || 0 : 0,
+              code: newVoucher.voucherCode.trim(),
+              validUntil: newVoucher.validUntil
+          };
+          
+          const res = await fetch('/api/admin/voucher', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+              body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+              fetchData(adminToken);
+              setShowVoucherModal(false);
+              window.open(`/api/admin/voucher/${data.voucher.id}/print?token=${adminToken}`, '_blank');
+              window.open(`/api/admin/voucher/${data.voucher.id}/print?token=${adminToken}`, '_blank');
+              setNewVoucher({ type: 'value', value: '', service: '', summary: '', recipientName: '', senderName: 'Tereza Rozkošná', note: '', voucherCode: '', validUntil: '' });
+          } else {
+              alert('Chyba: ' + data.message);
+          }
+      } catch (e) {
+          alert('Chyba při vytváření poukazu');
+      }
+  };
+
   const [openingHours, setOpeningHours] = useState<any>({
     'Pondělí': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
     'Úterý': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
@@ -430,15 +488,64 @@ const AdminPanel: React.FC = () => {
       updateSetting('openingHours', newHours);
   };
 
+const editReservation = async (id: number, data: any) => {
+    try {
+        await fetch(`/api/admin/reservation/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+            body: JSON.stringify(data)
+        });
+        fetchData(adminToken);
+    } catch (e) { console.error(e); }
+  };
+
   const updateReservationStatus = async (id: number, status: string, reason?: string, alternativeTermin?: string) => {
     try {
-        await fetch(`/api/admin/reservations/${id}`, {
-            method: 'PUT',
+        await fetch(`/api/admin/reservation/${id}/status`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
             body: JSON.stringify({ status, reason, alternativeTermin })
         });
         fetchData(adminToken);
     } catch (e) { console.error(e); }
+  };
+
+  
+  const deleteVoucher = async (id: number) => {
+    try {
+        await fetch(`/api/admin/voucher/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        fetchData(adminToken);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleUseVoucher = async () => {
+      if (!useVoucherModal) return;
+      if (useVoucherModal.type === 'value') {
+          if (!useVoucherAmount || isNaN(parseInt(useVoucherAmount))) {
+              if (!confirm('Nezadali jste částku k odečtení. Přejete si poukaz označit jako plně využitý (vyčerpaný)?')) return;
+          }
+      }
+      try {
+          const payload = { amountToDeduct: useVoucherModal.type === 'value' ? (parseInt(useVoucherAmount) || 0) : 0 };
+          const res = await fetch(`/api/admin/voucher/${useVoucherModal.id}/use`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+              body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+              setUseVoucherModal(null);
+              setUseVoucherAmount('');
+              fetchData(adminToken);
+          } else {
+              alert('Chyba: ' + data.message);
+          }
+      } catch (e) {
+          alert('Chyba při uplatnění poukazu.');
+      }
   };
 
   const updateVoucherStatus = async (id: number, status: string, voucherCode?: string) => {
@@ -650,10 +757,36 @@ const AdminPanel: React.FC = () => {
                   transition={{ duration: 0.3 }}
                   className="bg-[#0f3d26] rounded-lg border border-gold/10 overflow-hidden shadow-xl"
                >
-                  <div className="p-4 bg-[#0a2f1c] border-b border-gold/10 flex justify-between items-center">
+                  <div className="p-4 bg-[#0a2f1c] border-b border-gold/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <h3 className="text-white font-serif text-lg">Aktuální objednávky</h3>
-                      <span className="text-sm text-gray-400">Celkem: {reservations.length}</span>
+                      <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex bg-[#0f3d26] rounded-lg p-1 border border-gold/10">
+                              <button
+                                  onClick={() => setReservationView('list')}
+                                  className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${reservationView === 'list' ? 'bg-gold text-deep-green shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                  title="Seznam"
+                              >
+                                  <ListIcon size={18} />
+                              </button>
+                              <button
+                                  onClick={() => setReservationView('calendar')}
+                                  className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${reservationView === 'calendar' ? 'bg-gold text-deep-green shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                  title="Kalendář"
+                              >
+                                  <CalendarIcon size={18} />
+                              </button>
+                          </div>
+                          <button 
+                              onClick={() => setIsManualModalOpen(true)}
+                              className="bg-gold text-black px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white transition-colors whitespace-nowrap"
+                          >
+                              + Přidat ručně
+                          </button>
+                          <span className="text-sm text-gray-400 hidden sm:inline">Celkem: {reservations.length}</span>
+                      </div>
                   </div>
+                  {reservationView === 'list' ? (
+                    <>
                   <div className="overflow-x-auto">
                       {reservations.length === 0 ? (
                           <div className="p-8 text-center text-gray-500">
@@ -795,6 +928,19 @@ const AdminPanel: React.FC = () => {
                           </div>
                       )}
                   </div>
+                    </>
+                  ) : (
+                    <ReservationCalendar 
+                        reservations={reservations}
+                        updateReservationStatus={updateReservationStatus}
+                        handleOpenCancelModal={handleOpenCancelModal}
+                        openRescheduleModal={openRescheduleModal}
+                        setThankYouModalReservation={setThankYouModalReservation}
+                        editReservation={editReservation}
+                        
+                        specificDatesStr={specificDatesStr}
+                    />
+                  )}
                </motion.div>
           )}
 
@@ -808,7 +954,29 @@ const AdminPanel: React.FC = () => {
                   className="bg-[#0f3d26] rounded-lg border border-gold/10 overflow-hidden shadow-xl"
                >
                   <div className="p-4 bg-[#0a2f1c] border-b border-gold/10 flex justify-between items-center">
-                      <h3 className="text-white font-serif text-lg">Žádosti o Dárkové Poukazy</h3>
+                      <div className="flex items-center gap-4">
+                          <h3 className="text-white font-serif text-lg">Dárkové Poukazy</h3>
+                          <div className="flex bg-black/30 rounded p-1 border border-gray-700 ml-4">
+                              <button 
+                                  className={`px-3 py-1 rounded text-xs transition ${voucherTab === 'active' ? 'bg-gold text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                                  onClick={() => setVoucherTab('active')}
+                              >
+                                  Aktivní
+                              </button>
+                              <button 
+                                  className={`px-3 py-1 rounded text-xs transition ${voucherTab === 'archive' ? 'bg-gray-700 text-white font-bold' : 'text-gray-400 hover:text-white'}`}
+                                  onClick={() => setVoucherTab('archive')}
+                              >
+                                  Archiv (Využité/Prošlé)
+                              </button>
+                          </div>
+                          <button 
+                              onClick={() => setShowVoucherModal(true)}
+                              className="bg-gold text-deep-green text-xs font-bold px-3 py-1.5 rounded hover:bg-gold-light transition shadow-lg"
+                          >
+                              + Vygenerovat nový poukaz
+                          </button>
+                      </div>
                       <span className="text-sm text-gray-400">Celkem: {vouchers.length}</span>
                   </div>
                   <div className="overflow-x-auto">
@@ -820,11 +988,10 @@ const AdminPanel: React.FC = () => {
                       <table className="w-full text-left border-collapse">
                           <thead className="bg-[#0a2f1c] text-gold uppercase text-sm tracking-wider">
                               <tr>
-                                  <th className="p-4 border-b border-gold/10">Datum</th>
-                                  <th className="p-4 border-b border-gold/10">Dárce (Odesílatel)</th>
-                                  <th className="p-4 border-b border-gold/10">Obdarovaný (Pro)</th>
-                                  <th className="p-4 border-b border-gold/10">Typ & Částka</th>
-                                  <th className="p-4 border-b border-gold/10">Jedinečný Kód</th>
+                                  <th className="p-4 border-b border-gold/10">Datum (vytvoření)</th>
+                                  <th className="p-4 border-b border-gold/10">Kdo</th>
+                                  <th className="p-4 border-b border-gold/10">Hodnota/na co</th>
+                                  <th className="p-4 border-b border-gold/10">Jedinečný code</th>
                                   <th className="p-4 border-b border-gold/10">Stav</th>
                                   <th className="p-4 border-b border-gold/10">Akce</th>
                               </tr>
@@ -838,7 +1005,15 @@ const AdminPanel: React.FC = () => {
                               initial="hidden"
                               animate="show"
                           >
-                              {vouchers.map(vouch => (
+                              {vouchers.filter((v: any) => {
+    let isExpired = false;
+    if (v.validUntil) {
+        const d = new Date(v.validUntil);
+        if (!isNaN(d.getTime()) && d < new Date()) isExpired = true;
+    }
+    const isArchived = v.status === 'used' || v.status === 'cancelled' || isExpired;
+    return voucherTab === 'active' ? !isArchived : isArchived;
+}).map((vouch: any) => (
                                   <motion.tr 
                                       key={vouch.id} 
                                       className="hover:bg-white/5 transition-colors"
@@ -852,16 +1027,16 @@ const AdminPanel: React.FC = () => {
                                           <div className="text-xs text-gray-400">{new Date(vouch.createdAt || vouch.id).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'})}</div>
                                       </td>
                                       <td className="p-4">
-                                          <div className="font-medium text-white">{vouch.senderName}</div>
-                                          <div className="text-xs text-gray-400">{vouch.email}</div>
-                                      </td>
-                                      <td className="p-4">
-                                          <div className="font-medium text-white">{vouch.recipientName}</div>
+                                          <div className="font-medium text-white">Pro: <span className="text-gold">{vouch.recipientName}</span></div>
+                                          <div className="text-xs text-gray-400">Od: {vouch.senderName} ({vouch.email})</div>
                                           {vouch.note && <div className="text-xs text-gold/75 italic mt-1 font-serif">"{vouch.note}"</div>}
                                       </td>
                                       <td className="p-4">
                                           <div className="font-medium text-white">{vouch.summary}</div>
-                                          <div className="text-xs text-gray-400">{vouch.amount} Kč</div>
+                                          
+<div className="text-xs text-gray-400">Zaplaceno: {vouch.amount} Kč</div>
+{vouch.type === 'value' && <div className="text-xs text-gold">Zůstatek: {vouch.value} Kč</div>}
+
                                       </td>
                                       <td className="p-4">
                                           {vouch.voucherCode ? (
@@ -873,12 +1048,14 @@ const AdminPanel: React.FC = () => {
                                       <td className="p-4">
                                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                               vouch.status === 'paid' ? 'bg-green-900 text-green-200 border border-green-700' :
+vouch.status === 'used' ? 'bg-gray-800 text-gray-300 border border-gray-600' :
                                               vouch.status === 'cancelled' ? 'bg-red-900 text-red-200 border border-red-700' :
                                               'bg-yellow-900 text-yellow-200 border border-yellow-700'
                                           }`}>
-                                              {vouch.status === 'pending' ? 'Čeká na zaplacení' : vouch.status === 'paid' ? 'Zaplaceno & Odesláno' : 'Zrušeno'}
+                                              {vouch.status === 'pending' ? 'Čeká na zaplacení' : vouch.status === 'paid' ? 'Aktivní' : vouch.status === 'used' ? 'Využitý' : 'Zrušeno'}
                                           </span>
                                       </td>
+                                      
                                       <td className="p-4">
                                           {vouch.status === 'pending' && (
                                               <div className="flex gap-2">
@@ -887,36 +1064,89 @@ const AdminPanel: React.FC = () => {
                                                           if (confirm(`Opravdu si přejete potvrdit přijetí platby za poukaz pro '${vouch.recipientName}'? Tímto krokem bude vygenerován unikátní kód poukazu a odeslán dárci na e-mail: ${vouch.email}.`)) {
                                                               updateVoucherStatus(vouch.id, 'paid');
                                                           }
-                                                      }} 
-                                                      className="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded shadow-sm transition text-xs font-bold"
-                                                      title="Potvrdit platbu (vygeneruje kód a odesílá dárkový poukaz s unikátním číslem)"
+                                                      }}
+                                                      className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition"
+                                                      title="Potvrdit platbu"
                                                   >
-                                                      Schválit & Odeslat poukaz
+                                                      <Check size={16} />
                                                   </button>
                                                   <button 
                                                       onClick={() => {
-                                                          if (confirm(`Opravdu chcete stornovat/zrušit tuto objednávku poukazu?`)) {
+                                                          if (confirm('Opravdu chcete tento poukaz stornovat? Bude přesunut do archivu.')) {
                                                               updateVoucherStatus(vouch.id, 'cancelled');
                                                           }
-                                                      }} 
-                                                      className="bg-red-600 hover:bg-red-550 border border-red-700/50 text-white p-2 rounded shadow-sm transition text-xs" 
-                                                      title="Stornovat objednávku"
+                                                      }}
+                                                      className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded transition"
+                                                      title="Stornovat poukaz"
                                                   >
-                                                      <X size={14}/>
+                                                      <X size={16} />
+                                                  </button>
+                                                  <button 
+                                                      onClick={() => {
+                                                          if (confirm('Opravdu to chcete smazat? Tento krok je nevratný.')) {
+                                                              deleteVoucher(vouch.id);
+                                                          }
+                                                      }}
+                                                      className="bg-red-600 hover:bg-red-500 text-white p-2 rounded transition"
+                                                      title="Smazat poukaz navždy"
+                                                  >
+                                                      <Trash size={16} />
                                                   </button>
                                               </div>
                                           )}
                                           {vouch.status === 'paid' && (
-                                              <button 
-                                                  onClick={() => {
-                                                      if (confirm(`Opravdu chcete stornovat tento již schválený dárkový poukaz?`)) {
-                                                          updateVoucherStatus(vouch.id, 'cancelled');
-                                                      }
-                                                  }}
-                                                  className="text-red-400 hover:text-red-300 text-xs underline"
-                                              >
-                                                  Stornovat poukaz
-                                              </button>
+                                              <div className="flex flex-col gap-2">
+                                                  <button 
+                                                      onClick={() => setUseVoucherModal(vouch)}
+                                                      className="bg-gold hover:bg-yellow-400 text-black px-3 py-1.5 rounded transition text-xs font-bold"
+                                                  >
+                                                      Uplatnit / Snížit zůstatek
+                                                  </button>
+                                                  <button 
+                                                      onClick={() => {
+                                                          window.open(`/api/admin/voucher/${vouch.id}/print?token=${adminToken}`, '_blank');
+                                                      }}
+                                                      className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded transition text-xs font-bold border border-gray-600 mt-2"
+                                                  >
+                                                      Tisk / PDF
+                                                  </button>
+                                                  <div className="flex gap-2 mt-2">
+                                                      <button 
+                                                          onClick={() => {
+                                                              if (confirm(`Opravdu chcete stornovat tento již schválený dárkový poukaz? Bude přesunut do archivu.`)) {
+                                                                  updateVoucherStatus(vouch.id, 'cancelled');
+                                                              }
+                                                          }}
+                                                          className="text-gray-400 hover:text-gray-300 text-[10px] uppercase font-bold tracking-widest border border-gray-600 px-2 py-1 rounded"
+                                                      >
+                                                          Stornovat
+                                                      </button>
+                                                      <button 
+                                                          onClick={() => {
+                                                              if (confirm(`Opravdu to chcete smazat? Tento krok je nevratný.`)) {
+                                                                  deleteVoucher(vouch.id);
+                                                              }
+                                                          }}
+                                                          className="text-red-400 hover:text-red-300 text-[10px] uppercase font-bold tracking-widest border border-red-900 px-2 py-1 rounded"
+                                                      >
+                                                          Smazat
+                                                      </button>
+                                                  </div>
+                                              </div>
+                                          )}
+                                          {(vouch.status === 'used' || vouch.status === 'cancelled' || (vouch.validUntil && new Date(vouch.validUntil) < new Date())) && (
+                                              <div className="flex gap-2">
+                                                  <button 
+                                                      onClick={() => {
+                                                          if (confirm('Opravdu to chcete smazat? Tento krok je nevratný.')) {
+                                                              deleteVoucher(vouch.id);
+                                                          }
+                                                      }}
+                                                      className="text-red-400 hover:text-red-300 text-[10px] uppercase font-bold tracking-widest border border-red-900 px-2 py-1 rounded"
+                                                  >
+                                                      Smazat navždy
+                                                  </button>
+                                              </div>
                                           )}
                                       </td>
                                   </motion.tr>
@@ -1095,74 +1325,184 @@ const AdminPanel: React.FC = () => {
                   Zákazník: <strong className="text-gold">{cancelModalReservation.customerName}</strong><br />
                   Termín: <strong className="text-white">{new Date(cancelModalReservation.date).toLocaleDateString('cs-CZ')} v {cancelModalReservation.time}</strong>
                 </p>
-
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gold uppercase tracking-wider mb-1">
-                      Důvod zrušení (bude odeslán v e-mailu)
-                    </label>
-                    <textarea
-                      value={cancelReason}
+                  <textarea
+                      placeholder="Důvod zrušení (odesílá se klientovi)..."
+                      className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none min-h-[100px] text-sm"
                       onChange={(e) => setCancelReason(e.target.value)}
-                      placeholder="Uveďte důvod zrušení (např. Naléhavá zdravotní indispozice...)"
-                      className="w-full bg-[#072415] border border-gray-600 rounded p-2 text-white text-sm focus:border-gold outline-none h-24 resize-none"
-                    />
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCancelModalReservation(null)}
+                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded py-2 text-sm transition"
+                    >
+                      Zpět
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                          updateReservationStatus(cancelModalReservation.id, 'cancelled', cancelReason);
+                          setCancelModalReservation(null);
+                      }}
+                      className="flex-1 bg-red-600 hover:bg-red-500 text-white rounded py-2 text-sm font-semibold transition"
+                    >
+                      Potvrdit zrušení
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gold uppercase tracking-wider mb-1">
-                      Navrhnout náhradní termín z volných (volitelné)
-                    </label>
-                                        <div className="flex gap-2 mb-4">
-                        <input 
-                            type="date" 
-                            className="bg-black/20 text-white p-2 border border-gray-600 rounded focus:border-gold outline-none flex-1" 
-                            onChange={(e) => {
-                                const d = e.target.value;
-                                if (d) {
-                                    const dObj = new Date(d);
-                                    setCancelAlternativeTermin(`${dObj.getDate()}.${dObj.getMonth()+1}.${dObj.getFullYear()} - čeká na čas`);
-                                }
-                            }} 
-                        />
-                        <input 
-                            type="time" 
-                            className="bg-black/20 text-white p-2 border border-gray-600 rounded focus:border-gold outline-none flex-1" 
-                            onChange={(e) => {
-                                const t = e.target.value;
-                                setCancelAlternativeTermin(prev => prev.replace(' - čeká na čas', '') + ' v ' + t);
-                            }} 
-                        />
-                    </div>
-                    {cancelAlternativeTermin && (
-                        <div className="mt-2 text-sm text-gold">Vybraný náhradní termín: <strong>{cancelAlternativeTermin}</strong></div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setCancelModalReservation(null)}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded py-2 text-sm transition"
-                  >
-                    Storno
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateReservationStatus(cancelModalReservation.id, 'cancelled', cancelReason, cancelAlternativeTermin);
-                      setCancelModalReservation(null);
-                    }}
-                    className="flex-1 bg-red-600 hover:bg-red-500 text-white rounded py-2 text-sm font-semibold transition"
-                  >
-                    Potvrdit zrušení
-                  </button>
                 </div>
               </motion.div>
             </motion.div>
           )}
+          {useVoucherModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="bg-[#0a2f1c] border border-gold/30 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative">
+            <h4 className="text-xl text-white font-serif mb-4 text-center">Uplatnit poukaz</h4>
+            <p className="text-sm text-gray-300 mb-4 text-center">
+                Voucher pro: <strong className="text-gold">{useVoucherModal.recipientName}</strong><br/>
+                Typ: <strong>{useVoucherModal.type === 'value' ? 'Hodnota' : 'Služba'}</strong>
+            </p>
+            {useVoucherModal.type === 'value' && (
+                <div className="mb-4">
+                    <label className="text-xs text-gray-400 mb-1 block">Částka k odečtení (Kč)</label>
+                    <input 
+                        type="number"
+                        placeholder="Např. 1000"
+                        className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none transition text-center text-xl font-bold"
+                        value={useVoucherAmount}
+                        onChange={e => setUseVoucherAmount(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500 mt-2 text-center">Aktuální zůstatek: <strong>{useVoucherModal.value} Kč</strong></p>
+                </div>
+            )}
+            {(useVoucherModal.type === 'service' || useVoucherModal.type === 'manual') && (
+                <p className="text-sm text-gray-400 mb-4 text-center italic">
+                    Tento poukaz je na konkrétní službu. Potvrzením bude označen jako plně využitý.
+                </p>
+            )}
+            <div className="flex gap-3">
+                <button 
+                    onClick={() => setUseVoucherModal(null)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-xl transition"
+                >
+                    Zrušit
+                </button>
+                <button 
+                    onClick={handleUseVoucher}
+                    className="flex-1 bg-gold hover:bg-yellow-500 text-black font-bold py-2 rounded-xl transition"
+                >
+                    Potvrdit
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+{showVoucherModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowVoucherModal(false)}>
+                <div className="bg-[#0a2f1c] border border-gold/30 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                    <div className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-white transition" onClick={() => setShowVoucherModal(false)}>
+                        <X size={20} />
+                    </div>
+                    <h4 className="text-xl text-white font-serif mb-4 flex items-center gap-2">
+                        <Gift className="text-gold" size={24} /> Vytvořit nový poukaz (ručně)
+                    </h4>
+                    <div className="space-y-4">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs text-gold/80 uppercase tracking-widest font-bold mb-2 block">Typ poukazu</label>
+                                <select 
+                                    className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none transition"
+                                    value={newVoucher.type}
+                                    onChange={e => setNewVoucher({...newVoucher, type: e.target.value})}
+                                >
+                                    <option value="value">Hodnotový (Kč)</option>
+                                    <option value="service">Na konkrétní službu</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs text-gold/80 uppercase tracking-widest font-bold mb-2 block">Hodnota / Na co</label>
+                                <input 
+                                    type="text"
+                                    placeholder={newVoucher.type === 'value' ? "např. 1000" : "např. Relaxační masáž zad"}
+                                    className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none transition"
+                                    value={newVoucher.summary}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        if (newVoucher.type === 'value') {
+                                            setNewVoucher({...newVoucher, summary: val, value: val});
+                                        } else {
+                                            setNewVoucher({...newVoucher, summary: val, service: val});
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <label className="text-xs text-gold/80 uppercase tracking-widest font-bold mb-2 block">Pro koho (Jméno obdarovaného)</label>
+                            <input 
+                                type="text"
+                                className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none transition"
+                                value={newVoucher.recipientName}
+                                onChange={e => setNewVoucher({...newVoucher, recipientName: e.target.value})}
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="text-xs text-gold/80 uppercase tracking-widest font-bold mb-2 block">Jedinečný kód</label>
+                            <input 
+                                type="text"
+                                placeholder="Pokud nevyplníte, vygeneruje se automaticky"
+                                className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none transition font-mono uppercase"
+                                value={newVoucher.voucherCode}
+                                onChange={e => setNewVoucher({...newVoucher, voucherCode: e.target.value})}
+                            />
+                        </div>
 
+                        <div>
+                            <label className="text-xs text-gold/80 uppercase tracking-widest font-bold mb-2 block">Platnost do</label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                <button 
+                                    className="px-3 py-1.5 text-xs bg-black/30 hover:bg-gold/20 text-gray-300 hover:text-gold border border-gray-600 hover:border-gold/50 rounded-lg transition"
+                                    onClick={() => {
+                                        const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+                                        setNewVoucher({...newVoucher, validUntil: d.toISOString().split('T')[0]});
+                                    }}
+                                >+ 1 Rok</button>
+                                <button 
+                                    className="px-3 py-1.5 text-xs bg-black/30 hover:bg-gold/20 text-gray-300 hover:text-gold border border-gray-600 hover:border-gold/50 rounded-lg transition"
+                                    onClick={() => {
+                                        const d = new Date(); d.setFullYear(d.getFullYear() + 2);
+                                        setNewVoucher({...newVoucher, validUntil: d.toISOString().split('T')[0]});
+                                    }}
+                                >+ 2 Roky</button>
+                                <button 
+                                    className="px-3 py-1.5 text-xs bg-black/30 hover:bg-gold/20 text-gray-300 hover:text-gold border border-gray-600 hover:border-gold/50 rounded-lg transition"
+                                    onClick={() => {
+                                        const d = new Date(); d.setFullYear(d.getFullYear() + 3);
+                                        setNewVoucher({...newVoucher, validUntil: d.toISOString().split('T')[0]});
+                                    }}
+                                >+ 3 Roky</button>
+                            </div>
+                            <input 
+                                type="text"
+                                placeholder="např. 31.12.2025 nebo 2025-12-31"
+                                className="w-full bg-black/20 text-white p-3 rounded-xl border border-gray-600 focus:border-gold outline-none transition"
+                                value={newVoucher.validUntil}
+                                onChange={e => setNewVoucher({...newVoucher, validUntil: e.target.value})}
+                            />
+                            <p className="text-[10px] text-gray-500 mt-1">Lze vybrat z rychlého menu nebo napsat ručně libovolný text.</p>
+                        </div>
+                        
+                        <button 
+                            onClick={createManualVoucher}
+                            className="w-full bg-gold hover:bg-[#b08d20] text-deep-green font-bold py-3.5 rounded-xl mt-4 shadow-lg transition"
+                        >
+                            Vygenerovat a zobrazit k tisku
+                        </button>
+                    </div>
+                </div>
+            </div>
+          )}
           {rescheduleModalReservation && (
             <motion.div
               key="reschedule-modal"
@@ -1282,6 +1622,12 @@ const AdminPanel: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+      <ManualReservationModal 
+          isOpen={isManualModalOpen}
+          onClose={() => setIsManualModalOpen(false)}
+          onSave={fetchData}
+      />
       </div>
     </div>
   );
