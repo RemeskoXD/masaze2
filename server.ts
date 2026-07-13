@@ -104,7 +104,9 @@ async function initDB() {
     
     await connection.query("CREATE TABLE IF NOT EXISTS settings (setting_key VARCHAR(50) PRIMARY KEY, setting_value JSON) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
     await connection.query("CREATE TABLE IF NOT EXISTS reviews (id INT AUTO_INCREMENT PRIMARY KEY, author VARCHAR(100) NOT NULL, rating INT NOT NULL DEFAULT 5, text TEXT NOT NULL, date VARCHAR(20) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-    await connection.query("CREATE TABLE IF NOT EXISTS reservations (id INT AUTO_INCREMENT PRIMARY KEY, serviceId INT NOT NULL, date VARCHAR(20) NOT NULL, time VARCHAR(10) NOT NULL, customerName VARCHAR(100) NOT NULL, phone VARCHAR(50) NOT NULL, email VARCHAR(100) NOT NULL, note TEXT, totalPrice INT NOT NULL, status VARCHAR(20) DEFAULT 'Nová', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    await connection.query("CREATE TABLE IF NOT EXISTS reservations (id INT AUTO_INCREMENT PRIMARY KEY, serviceId INT NOT NULL, date VARCHAR(20) NOT NULL, time VARCHAR(10) NOT NULL, customerName VARCHAR(100) NOT NULL, phone VARCHAR(50) NOT NULL, email VARCHAR(100) NOT NULL, note TEXT, totalPrice INT NOT NULL, status VARCHAR(20) DEFAULT 'Nová', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, voucherCode VARCHAR(50), vs VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    try { await connection.query("ALTER TABLE reservations ADD COLUMN voucherCode VARCHAR(50);"); } catch(e) {}
+    try { await connection.query("ALTER TABLE reservations ADD COLUMN vs VARCHAR(50);"); } catch(e) {}
     await connection.query("CREATE TABLE IF NOT EXISTS vouchers (id BIGINT PRIMARY KEY, type VARCHAR(50), value INT, service VARCHAR(100), summary VARCHAR(255), amount INT NOT NULL, recipientName VARCHAR(100) NOT NULL, senderName VARCHAR(100), email VARCHAR(100), note TEXT, status VARCHAR(20) DEFAULT 'paid', voucherCode VARCHAR(50), createdAt VARCHAR(50), validUntil VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     connection.release();
@@ -285,9 +287,9 @@ const app = express();
 
         resId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
         await connection.query(
-          `INSERT INTO reservations (id, serviceId, date, time, customerName, phone, email, note, totalPrice, vs, status, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [resId, serviceId, date, time, customerName, phone, email, note || '', finalPrice, vs || '', req.body.isAdminManual ? 'confirmed' : 'pending', new Date().toISOString()]
+          `INSERT INTO reservations (id, serviceId, date, time, customerName, phone, email, note, totalPrice, vs, status, createdAt, voucherCode)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [resId, serviceId, date, time, customerName, phone, email, note || '', finalPrice, vs || '', req.body.isAdminManual ? 'confirmed' : 'pending', new Date().toISOString(), appliedVoucherCode || null]
         );
 
         await connection.commit();

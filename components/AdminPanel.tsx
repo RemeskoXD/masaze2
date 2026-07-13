@@ -838,10 +838,15 @@ const editReservation = async (id: number, data: any) => {
                                               })()}
                                           </div>
                                           <div className="text-gray-400 whitespace-pre-wrap mt-2">{res.note || '-'}</div>
-                                          {(res.totalPrice || res.vs) && (
+                                          {(res.totalPrice !== undefined || res.vs) && (
                                               <div className="mt-3 text-gold/80 bg-gold/10 inline-flex flex-wrap items-center gap-3 px-2 py-1 rounded">
-                                                  {res.totalPrice && <span className="font-medium text-gold">{res.totalPrice} Kč</span>}
+                                                  {res.totalPrice !== undefined && <span className="font-medium text-gold">{res.totalPrice} Kč</span>}
                                                   {res.vs && <span>VS: {res.vs}</span>}
+                                              </div>
+                                          )}
+                                          {res.voucherCode && (
+                                              <div className="mt-2 text-green-400 bg-green-900/30 inline-flex flex-wrap items-center gap-2 px-2 py-1 rounded border border-green-500/20">
+                                                  <Gift size={12} /> <span className="font-mono" title="Uplatněn poukaz">{res.voucherCode}</span>
                                               </div>
                                           )}
                                       </td>
