@@ -59,6 +59,7 @@ const ReservationSystem: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [specificDates, setSpecificDates] = useState<any>({});
+  const [bookedSlots, setBookedSlots] = useState<any[]>([]);
   const [openingHours, setOpeningHours] = useState<any>({
     'Pondělí': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
     'Úterý': { start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00' },
@@ -111,6 +112,16 @@ const ReservationSystem: React.FC = () => {
       } catch (e) { console.log(e); }
     };
     fetchSettings();
+    const fetchAvailability = async () => {
+      try {
+        const res = await fetch('/api/availability');
+        if (res.ok) {
+          const data = await res.json();
+          setBookedSlots(data);
+        }
+      } catch (e) { console.log(e); }
+    };
+    fetchAvailability();
   }, []);
 
     const generateTimeSlots = (serviceId: number | null, selectedAddons: number[] = [], dateStr: string | null = selectedDate) => {
@@ -155,6 +166,37 @@ const ReservationSystem: React.FC = () => {
             start: parseInt(bs[0]) * 60 + parseInt(bs[1]),
             end: parseInt(be[0]) * 60 + parseInt(be[1])
         };
+    });
+
+    // Combine settings breaks with existing reservations for this date
+    bookedSlots.filter((b: any) => b.date === dateStr).forEach((b: any) => {
+        let rsMins = 0;
+        let reMins = 0;
+        if (b.time) {
+            const ts = b.time.split(':');
+            rsMins = parseInt(ts[0]) * 60 + parseInt(ts[1]);
+        }
+        if (b.endTime) {
+            const te = b.endTime.split(':');
+            reMins = parseInt(te[0]) * 60 + parseInt(te[1]);
+        } else if (b.serviceId && b.time) {
+            // Fallback if no endTime is saved (old reservations)
+            let bDuration = 60;
+            const bService = SERVICES_LIST.find(s => s.id === b.serviceId);
+            if (bService) {
+                const bm = bService.duration.match(/(\d+)/);
+                if (bm) bDuration = parseInt(bm[0]) + 15;
+            }
+            reMins = rsMins + bDuration;
+        }
+        
+        if (rsMins > 0 && reMins > rsMins) {
+            // Buffer time before and after reservation (let's say 0 mins buffer since the reservation already includes a 15 min buffer in endTime, or we can just use the exact start/end)
+            breaks.push({
+                start: rsMins,
+                end: reMins
+            });
+        }
     });
 
     const slots = [];

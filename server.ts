@@ -195,6 +195,16 @@ const app = express();
   // --- PUBLIC API Routes ---
 
 
+  app.get('/api/availability', async (req, res) => {
+    try {
+      const [rows] = await pool.query("SELECT date, time, endTime, serviceId FROM reservations WHERE status != 'cancelled'");
+      res.json(rows);
+    } catch (e) {
+      console.error('/api/availability DB Error:', e);
+      res.status(500).json({ success: false, message: 'DB Error' });
+    }
+  });
+
   app.get('/api/settings', async (req, res) => {
     try {
       const [rows]: any = await pool.query('SELECT setting_key, setting_value FROM settings');
