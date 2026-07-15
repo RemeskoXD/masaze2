@@ -94,6 +94,7 @@ export default function ManualReservationModal({ isOpen, onClose, onSave }: any)
     const [phone, setPhone] = useState('');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
+    const [endTime, setEndTime] = useState('');
     const [note, setNote] = useState('');
     
     const [serviceSearch, setServiceSearch] = useState('');
@@ -108,6 +109,22 @@ export default function ManualReservationModal({ isOpen, onClose, onSave }: any)
             setError('');
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        if (serviceSearch && time && !endTime) {
+            const service = SERVICES_LIST.find(s => s.title === serviceSearch);
+            if (service && service.duration) {
+                const durationMins = parseInt(service.duration.replace(/\D/g, '')) + 15;
+                if (!isNaN(durationMins)) {
+                    const [hours, minutes] = time.split(':').map(Number);
+                    const totalMins = (hours * 60) + minutes + durationMins;
+                    const endH = Math.floor(totalMins / 60) % 24;
+                    const endM = totalMins % 60;
+                    setEndTime(`${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`);
+                }
+            }
+        }
+    }, [serviceSearch, time]);
 
     useEffect(() => {
         let price = 0;
@@ -188,6 +205,7 @@ export default function ManualReservationModal({ isOpen, onClose, onSave }: any)
                     serviceId: Number(service.id),
                     date,
                     time,
+                    endTime,
                     customerName,
                     email: email || 'neuvedeno@manual.cz',
                     phone: phone || '-',
@@ -306,6 +324,15 @@ export default function ManualReservationModal({ isOpen, onClose, onSave }: any)
                                         required
                                         value={time}
                                         onChange={e => setTime(e.target.value)}
+                                        className="w-full bg-[#0a2f1c] border border-gold/20 rounded-xl px-4 py-3 text-white focus:border-gold outline-none [color-scheme:dark]"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm text-gray-300">Konec (rezerva 15m)</label>
+                                    <input 
+                                        type="time" 
+                                        value={endTime}
+                                        onChange={e => setEndTime(e.target.value)}
                                         className="w-full bg-[#0a2f1c] border border-gold/20 rounded-xl px-4 py-3 text-white focus:border-gold outline-none [color-scheme:dark]"
                                     />
                                 </div>

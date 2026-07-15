@@ -106,14 +106,30 @@ export default function ReservationCalendar({
         const service = SERVICES_LIST.find(s => s.id === res.serviceId);
         if (service && service.duration) {
             const parsed = parseInt(service.duration.replace(/\D/g, ''));
-            if (!isNaN(parsed)) durationMins = parsed;
+            if (!isNaN(parsed)) durationMins = parsed + 15; // + 15 min reserve
         }
         const startMinutesFromTop = ((hours - START_HOUR) * 60) + minutes;
         const top = (startMinutesFromTop / 60) * HOUR_HEIGHT;
-        const height = (durationMins / 60) * HOUR_HEIGHT;
+        let height = (durationMins / 60) * HOUR_HEIGHT;
         const resDateTime = new Date(`${res.date}T${res.time}`);
         const isPast = resDateTime < new Date();
-        return { top: `${top}px`, height: `${Math.max(height, 30)}px`, isPast };
+        
+        // Calculate end time
+        const endMinutes = minutes + durationMins;
+        const endHours = hours + Math.floor(endMinutes / 60);
+        const remainingEndMinutes = endMinutes % 60;
+        let endTimeStr = `${endHours.toString().padStart(2, '0')}:${remainingEndMinutes.toString().padStart(2, '0')}`;
+        
+        if (res.endTime) {
+            endTimeStr = res.endTime;
+            const [endH, endM] = res.endTime.split(':').map(Number);
+            const durationCustom = ((endH - hours) * 60) + (endM - minutes);
+            if (durationCustom > 0) {
+                height = (durationCustom / 60) * HOUR_HEIGHT;
+            }
+        }
+
+        return { top: `${top}px`, height: `${Math.max(height, 30)}px`, isPast, endTimeStr };
     };
     
     const handleEditChange = (e: any) => {
@@ -244,7 +260,7 @@ export default function ReservationCalendar({
 
                     <div className="absolute top-0 left-16 sm:left-20 right-0 bottom-0 p-1 sm:p-2 pointer-events-none">
                         {dayReservations.map((res) => {
-                            const { top, height, isPast } = getReservationStyle(res);
+                            const { top, height, isPast, endTimeStr } = getReservationStyle(res);
                             const service = SERVICES_LIST.find(s => s.id === res.serviceId);
                             const sName = service ? service.title : res.serviceId;
                             
@@ -261,7 +277,7 @@ export default function ReservationCalendar({
                                 >
                                     <div className="flex justify-between items-start">
                                         <div className="font-medium text-white text-sm sm:text-base truncate group-hover:text-gold transition-colors">{res.customerName}</div>
-                                        <div className="text-xs bg-black/30 px-2 py-0.5 rounded text-gray-300 font-mono">{res.time}</div>
+                                        <div className="text-xs bg-black/30 px-2 py-0.5 rounded text-gray-300 font-mono">{res.time} - {endTimeStr}</div>
                                     </div>
                                     <div className={`text-xs mt-1 truncate ${isPast ? 'text-gray-400' : 'text-gold/80'}`}>
                                         {sName}
