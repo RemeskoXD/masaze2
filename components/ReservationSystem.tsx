@@ -71,7 +71,7 @@ function PublicTimelinePicker({ date, time, endTime, setTime, setEndTime, setDis
             const srv = SERVICES_LIST.find((s: any) => s.id === r.serviceId);
             let dur = 60;
             if (srv && srv.duration) {
-                const m = srv.duration.match(/(d+)/);
+                const m = srv.duration.match(/(\d+)/);
                 if (m) dur = parseInt(m[0]) + 15;
             }
             rEnd = rStart + dur;
@@ -84,13 +84,13 @@ function PublicTimelinePicker({ date, time, endTime, setTime, setEndTime, setDis
     let displayDuration = 60;
     const service = SERVICES_LIST.find((s: any) => s.id === serviceId);
     if (service && service.duration) {
-        const parsed = parseInt(service.duration.replace(/D/g, ''));
+        const parsed = parseInt(service.duration.replace(/\D/g, ''));
         if (!isNaN(parsed)) displayDuration = parsed;
     }
     selectedAddons.forEach((addonId: number) => {
         const addon = SERVICES_LIST.find((s: any) => s.id === addonId);
         if (addon) {
-            const m = addon.duration.match(/(d+)/);
+            const m = addon.duration.match(/(\d+)/);
             if (m) displayDuration += parseInt(m[0]);
         }
     });
@@ -128,11 +128,44 @@ function PublicTimelinePicker({ date, time, endTime, setTime, setEndTime, setDis
         return true;
     };
 
-    const handleManualTimeChange = (e: any) => {
-        const val = e.target.value;
-        if (!val) return;
-        const mins = parseTime(val);
-        checkAndSetTime(mins);
+    // calculate available 5-min slots
+    const availableSlots: string[] = [];
+    for (let m = sMins; m <= eMins - requiredDuration; m += 5) {
+        let overlap = false;
+        for (const b of allBlocks) {
+            const bStart = parseTime(b.start);
+            const bEnd = parseTime(b.end);
+            if (m < bEnd && m + requiredDuration > bStart) {
+                overlap = true;
+                break;
+            }
+        }
+        if (!overlap) {
+            availableSlots.push(formatTime(m));
+        }
+    }
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [tempTime, setTempTime] = useState(time || '');
+
+    useEffect(() => {
+        setTempTime(time || '');
+    }, [time]);
+
+    const handleTimeSubmit = () => {
+        setIsOpen(false);
+        if (!tempTime) return;
+        const mins = parseTime(tempTime);
+        const valid = checkAndSetTime(mins);
+        if (!valid) {
+            setTempTime(time || '');
+        }
+    };
+
+    const handleKeyDown = (e: any) => {
+        if (e.key === 'Enter') {
+            handleTimeSubmit();
+        }
     };
 
     // Split timeline into chunks of 2 hours for rows
@@ -146,18 +179,43 @@ function PublicTimelinePicker({ date, time, endTime, setTime, setEndTime, setDis
     const selEnd = selStart !== null ? selStart + requiredDuration : null;
     const displayEnd = selStart !== null ? selStart + displayDuration : null;
 
+    const filteredSlots = tempTime ? availableSlots.filter(t => t.includes(tempTime)) : availableSlots;
+
     return (
         <div className="mt-4 border border-gold/20 rounded-xl p-5 bg-white/50 shadow-sm flex flex-col gap-6">
             
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="flex flex-col gap-1 w-full sm:w-auto">
+                <div className="flex flex-col gap-1 w-full sm:w-auto relative">
                     <label className="text-xs font-medium uppercase tracking-widest text-text-muted">Přesný čas začátku</label>
                     <input 
-                        type="time" 
-                        value={time || ''} 
-                        onChange={handleManualTimeChange}
-                        className="bg-white border border-gold/30 rounded-lg px-4 py-2 text-text-dark focus:border-gold outline-none w-full sm:w-40 font-mono"
+                        type="text" 
+                        value={tempTime} 
+                        onChange={(e) => { setTempTime(e.target.value); setIsOpen(true); }}
+                        onFocus={() => setIsOpen(true)}
+                        onBlur={() => setTimeout(() => handleTimeSubmit(), 200)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Vyberte nebo napište čas"
+                        className="bg-white border border-gold/30 rounded-lg px-4 py-2 text-text-dark focus:border-gold outline-none w-full sm:w-56 font-mono shadow-sm"
                     />
+                    {isOpen && (
+                        <div className="absolute top-full left-0 mt-1 w-full sm:w-56 max-h-48 overflow-y-auto bg-white border border-gold/30 rounded-lg shadow-xl z-50 py-1 scrollbar-thin scrollbar-thumb-gold/20">
+                            {filteredSlots.length > 0 ? filteredSlots.map(t => (
+                                <div 
+                                    key={t}
+                                    className="px-4 py-2 hover:bg-gold/10 cursor-pointer font-mono text-sm text-text-dark transition-colors"
+                                    onClick={() => {
+                                        setTempTime(t);
+                                        checkAndSetTime(parseTime(t));
+                                        setIsOpen(false);
+                                    }}
+                                >
+                                    {t}
+                                </div>
+                            )) : (
+                                <div className="px-4 py-3 text-sm text-text-muted text-center italic">Žádný volný čas v tomto znění</div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 
                 {time && (
