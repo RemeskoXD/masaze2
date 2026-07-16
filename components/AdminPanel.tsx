@@ -1632,6 +1632,9 @@ vouch.status === 'used' ? 'bg-gray-800 text-gray-300 border border-gray-600' :
           isOpen={isManualModalOpen}
           onClose={() => setIsManualModalOpen(false)}
           onSave={fetchData}
+          reservations={reservations}
+          specificDatesStr={specificDatesStr}
+          openingHours={openingHours}
       />
       </div>
     </div>
