@@ -98,39 +98,9 @@ function PublicTimelinePicker({ date, time, endTime, setTime, setEndTime, setDis
     // Add 15 min buffer to the blocked duration
     const requiredDuration = displayDuration + 15;
 
-    const checkAndSetTime = (clickedMins: number) => {
-        if (clickedMins < sMins) clickedMins = sMins;
-        if (clickedMins + requiredDuration > eMins) clickedMins = eMins - requiredDuration;
-        
-        let hasOverlap = false;
-        const proposedStart = clickedMins;
-        const proposedEnd = clickedMins + requiredDuration;
-
-        for (const b of allBlocks) {
-            const bStart = parseTime(b.start);
-            const bEnd = parseTime(b.end);
-            if (proposedStart < bEnd && proposedEnd > bStart) {
-                hasOverlap = true;
-                break;
-            }
-        }
-
-        if (hasOverlap) {
-            alert('Vybraný čas se překrývá s jinou rezervací nebo přestávkou.');
-            return false;
-        }
-
-        setTime(formatTime(clickedMins));
-        setEndTime(formatTime(clickedMins + requiredDuration));
-        if (setDisplayEndTime) {
-            setDisplayEndTime(formatTime(clickedMins + displayDuration));
-        }
-        return true;
-    };
-
-    // calculate available 5-min slots
-    const availableSlots: string[] = [];
-    for (let m = sMins; m <= eMins - requiredDuration; m += 5) {
+    // calculate available 30-min slots
+    const availableSlots: { time: string, mins: number }[] = [];
+    for (let m = sMins; m <= eMins - requiredDuration; m += 30) {
         let overlap = false;
         for (const b of allBlocks) {
             const bStart = parseTime(b.start);
@@ -141,244 +111,73 @@ function PublicTimelinePicker({ date, time, endTime, setTime, setEndTime, setDis
             }
         }
         if (!overlap) {
-            availableSlots.push(formatTime(m));
+            availableSlots.push({ time: formatTime(m), mins: m });
         }
     }
 
-    const [isOpen, setIsOpen] = useState(false);
-    const [tempTime, setTempTime] = useState(time || '');
-
-    useEffect(() => {
-        setTempTime(time || '');
-    }, [time]);
-
-    const handleTimeSubmit = () => {
-        setIsOpen(false);
-        if (!tempTime) return;
-        const mins = parseTime(tempTime);
-        const valid = checkAndSetTime(mins);
-        if (!valid) {
-            setTempTime(time || '');
+    React.useEffect(() => {
+        if (time) {
+            const currentStartMins = parseTime(time);
+            
+            // Check for overlap due to addon changes
+            let hasOverlap = false;
+            const proposedEnd = currentStartMins + requiredDuration;
+            for (const b of allBlocks) {
+                const bStart = parseTime(b.start);
+                const bEnd = parseTime(b.end);
+                if (currentStartMins < bEnd && proposedEnd > bStart) {
+                    hasOverlap = true;
+                    break;
+                }
+            }
+            
+            if (hasOverlap) {
+                setTime(null);
+                setEndTime(null);
+                if (setDisplayEndTime) setDisplayEndTime(null);
+            } else {
+                setEndTime(formatTime(currentStartMins + requiredDuration));
+                if (setDisplayEndTime) {
+                    setDisplayEndTime(formatTime(currentStartMins + displayDuration));
+                }
+            }
         }
-    };
-
-    const handleKeyDown = (e: any) => {
-        if (e.key === 'Enter') {
-            handleTimeSubmit();
-        }
-    };
-
-    // Split timeline into chunks of 2 hours for rows
-    const chunks: { start: number; end: number }[] = [];
-    const step = 2 * 60; // 2 hours per block
-    for (let current = sMins; current < eMins; current += step) {
-        chunks.push({ start: current, end: Math.min(current + step, eMins) });
-    }
-
-    const selStart = time ? parseTime(time) : null;
-    const selEnd = selStart !== null ? selStart + requiredDuration : null;
-    const displayEnd = selStart !== null ? selStart + displayDuration : null;
-
-    const filteredSlots = tempTime ? availableSlots.filter(t => t.includes(tempTime)) : availableSlots;
+    }, [time, displayDuration, requiredDuration]);
 
     return (
         <div className="mt-4 border border-gold/20 rounded-xl p-5 bg-white/50 shadow-sm flex flex-col gap-6">
+            <h4 className="text-sm uppercase tracking-widest text-text-muted mb-2 font-medium">Dostupné časy</h4>
             
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="flex flex-col gap-1 w-full sm:w-auto relative">
-                    <label className="text-xs font-medium uppercase tracking-widest text-text-muted">Přesný čas začátku</label>
-                    <input 
-                        type="text" 
-                        value={tempTime} 
-                        onChange={(e) => { setTempTime(e.target.value); setIsOpen(true); }}
-                        onFocus={() => setIsOpen(true)}
-                        onBlur={() => setTimeout(() => handleTimeSubmit(), 200)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Vyberte nebo napište čas"
-                        className="bg-white border border-gold/30 rounded-lg px-4 py-2 text-text-dark focus:border-gold outline-none w-full sm:w-56 font-mono shadow-sm"
-                    />
-                    {isOpen && (
-                        <div className="absolute top-full left-0 mt-1 w-full sm:w-56 max-h-48 overflow-y-auto bg-white border border-gold/30 rounded-lg shadow-xl z-50 py-1 scrollbar-thin scrollbar-thumb-gold/20">
-                            {filteredSlots.length > 0 ? filteredSlots.map(t => (
-                                <div 
-                                    key={t}
-                                    className="px-4 py-2 hover:bg-gold/10 cursor-pointer font-mono text-sm text-text-dark transition-colors"
-                                    onClick={() => {
-                                        setTempTime(t);
-                                        checkAndSetTime(parseTime(t));
-                                        setIsOpen(false);
-                                    }}
-                                >
-                                    {t}
-                                </div>
-                            )) : (
-                                <div className="px-4 py-3 text-sm text-text-muted text-center italic">Žádný volný čas v tomto znění</div>
-                            )}
-                        </div>
-                    )}
-                </div>
-                
-                {time && (
-                    <div className="text-sm font-medium text-text-dark bg-gold/10 px-4 py-2 rounded-lg border border-gold/20 flex flex-col items-end gap-1">
-                        <div>
-                            <span>Vybráno: </span>
-                            <span className="font-bold text-gold-dark">{time} - {formatTime(displayEnd!)}</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div className="flex flex-col gap-10 mt-2">
-                {chunks.map((chunk, idx) => {
-                    const chunkMins = chunk.end - chunk.start;
-                    
-                    // Generate ticks for every 5 mins
-                    const ticks = [];
-                    for (let t = chunk.start; t <= chunk.end; t += 5) {
-                        ticks.push(t);
-                    }
-
-                    return (
-                        <div key={idx} className="relative flex flex-col">
-                            {/* Ruler (Time scale) */}
-                            <div className="relative h-6 mb-1 text-[10px] text-text-muted font-medium">
-                                {ticks.map(tick => {
-                                    const left = ((tick - chunk.start) / chunkMins) * 100;
-                                    const isQuarterHour = tick % 15 === 0;
-                                    const isHour = tick % 60 === 0;
-                                    if (isQuarterHour) {
-                                        return (
-                                            <div 
-                                                key={tick} 
-                                                className="absolute -translate-x-1/2 bottom-0 flex flex-col items-center"
-                                                style={{ left: `${left}%` }}
-                                            >
-                                                <span className={isHour ? 'font-bold text-text-dark' : ''}>{formatTime(tick)}</span>
-                                                <div className={`w-[1px] ${isHour ? 'h-2 bg-text-muted' : 'h-1.5 bg-text-muted/50'} mt-0.5`}></div>
-                                            </div>
-                                        );
-                                    } else {
-                                        return (
-                                            <div 
-                                                key={tick} 
-                                                className="absolute -translate-x-1/2 bottom-0 flex flex-col items-center"
-                                                style={{ left: `${left}%` }}
-                                            >
-                                                <div className="w-[1px] h-1 bg-text-muted/30"></div>
-                                            </div>
-                                        );
+            {availableSlots.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    {availableSlots.map((slot) => {
+                        const isSelected = time === slot.time;
+                        return (
+                            <button
+                                key={slot.time}
+                                onClick={() => {
+                                    setTime(slot.time);
+                                    setEndTime(formatTime(slot.mins + requiredDuration));
+                                    if (setDisplayEndTime) {
+                                        setDisplayEndTime(formatTime(slot.mins + displayDuration));
                                     }
-                                })}
-                            </div>
-                            
-                            <div 
-                                className="relative h-14 bg-green-50 rounded-lg cursor-pointer overflow-hidden group border border-green-200 hover:border-gold/50 transition-colors shadow-inner"
-                                onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const x = Math.max(0, e.clientX - rect.left);
-                                    const percentage = x / rect.width;
-                                    let clickedMins = chunk.start + (percentage * chunkMins);
-                                    clickedMins = Math.round(clickedMins / 5) * 5; // Snap to 5 mins instead of 15
-                                    checkAndSetTime(clickedMins);
                                 }}
+                                className={`py-3 px-2 rounded-xl text-center font-mono text-sm transition-all duration-300 border ${
+                                    isSelected 
+                                    ? 'bg-gold border-gold text-white shadow-md transform scale-105' 
+                                    : 'bg-white border-gold/30 text-text-dark hover:border-gold hover:bg-gold/5'
+                                }`}
                             >
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-sm text-green-700 pointer-events-none transition-opacity bg-green-50/50 z-20 font-medium">
-                                    Vybrat čas
-                                </div>
-
-                                {/* Minor grid lines (every 5 mins) */}
-                                {ticks.map(tick => {
-                                    if (tick === chunk.start || tick === chunk.end) return null;
-                                    const left = ((tick - chunk.start) / chunkMins) * 100;
-                                    return (
-                                        <div 
-                                            key={tick}
-                                            className={`absolute top-0 bottom-0 border-l ${tick % 15 === 0 ? 'border-green-300/60' : 'border-green-200/40'} z-0`}
-                                            style={{ left: `${left}%` }}
-                                        />
-                                    );
-                                })}
-
-                                {/* Blocked areas */}
-                                {allBlocks.map((b, i) => {
-                                    const bStart = parseTime(b.start);
-                                    const bEnd = parseTime(b.end);
-                                    if (bEnd <= chunk.start || bStart >= chunk.end) return null;
-                                    
-                                    const drawStart = Math.max(bStart, chunk.start);
-                                    const drawEnd = Math.min(bEnd, chunk.end);
-                                    
-                                    const left = ((drawStart - chunk.start) / chunkMins) * 100;
-                                    const width = ((drawEnd - drawStart) / chunkMins) * 100;
-                                    
-                                    const isBreak = b.type === 'break';
-                                    const bgClass = isBreak ? 'bg-gray-300' : 'bg-red-200';
-                                    const title = isBreak ? 'Přestávka' : 'Obsazeno';
-
-                                    return (
-                                        <div 
-                                            key={i} 
-                                            className={`absolute top-0 bottom-0 ${bgClass} border-x border-white/50 z-10`}
-                                            style={{ left: `${left}%`, width: `${width}%` }}
-                                            title={title}
-                                        />
-                                    );
-                                })}
-
-                                {/* Selected Time Block */}
-                                {selStart !== null && selEnd !== null && (
-                                    <>
-                                        {/* Display Duration (The visible massage time) */}
-                                        {(() => {
-                                            if (displayEnd! <= chunk.start || selStart >= chunk.end) return null;
-                                            const drawStart = Math.max(selStart, chunk.start);
-                                            const drawEnd = Math.min(displayEnd!, chunk.end);
-                                            const left = ((drawStart - chunk.start) / chunkMins) * 100;
-                                            const width = ((drawEnd - drawStart) / chunkMins) * 100;
-                                            return (
-                                                <div 
-                                                    className="absolute top-0 bottom-0 bg-gold border-2 border-gold-dark z-10 pointer-events-none shadow-md"
-                                                    style={{ left: `${left}%`, width: `${width}%` }}
-                                                >
-                                                    {width > 15 && (
-                                                        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                                                            <span className="text-xs font-bold text-white bg-black/30 px-2 py-0.5 rounded truncate">
-                                                                {time} - {formatTime(displayEnd!)}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Buffer Duration (The 15 min hidden prep time) - shown as break */}
-                                        {(() => {
-                                            if (selEnd <= chunk.start || displayEnd! >= chunk.end) return null;
-                                            const drawStart = Math.max(displayEnd!, chunk.start);
-                                            const drawEnd = Math.min(selEnd, chunk.end);
-                                            const left = ((drawStart - chunk.start) / chunkMins) * 100;
-                                            const width = ((drawEnd - drawStart) / chunkMins) * 100;
-                                            return (
-                                                <div 
-                                                    className="absolute top-0 bottom-0 bg-gray-300 border-l border-white/50 z-10 pointer-events-none"
-                                                    style={{ left: `${left}%`, width: `${width}%` }}
-                                                />
-                                            );
-                                        })()}
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-            
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-xs text-text-muted mt-4 border-t border-gold/10 pt-4">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-50 border border-green-200 rounded"></div> Volno</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-200 rounded"></div> Obsazeno</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-300 rounded"></div> Přestávka</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gold border border-gold-dark rounded"></div> Vaše rezervace</div>
-            </div>
+                                {slot.time}
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="p-6 text-center text-text-muted bg-white/60 rounded-xl border border-gold/20 italic">
+                    V tento den už nejsou žádné volné termíny s dostatečnou časovou rezervou pro vybranou službu.
+                </div>
+            )}
         </div>
     );
 }
@@ -453,7 +252,7 @@ const ReservationSystem: React.FC = () => {
     const handleSelectService = (e: any) => {
       const detail = e.detail;
       if (detail && detail.serviceId) {
-        setSelectedService(detail.serviceId);
+        setSelectedService(detail.serviceId); setSelectedTime(null); setSelectedEndTime(null);
         goToStep(2);
       }
     };
@@ -921,7 +720,7 @@ const ReservationSystem: React.FC = () => {
                                 return (
                                 <button
                                     key={service.id}
-                                    onClick={() => { if (selectedService === service.id) goToStep(2); else setSelectedService(service.id); }}
+                                    onClick={() => { if (selectedService === service.id) goToStep(2); else { setSelectedService(service.id); } }}
                                     className={`group relative flex justify-between items-center p-6 rounded-2xl border transition-all duration-300 text-left overflow-hidden ${
                                         isSelected 
                                         ? 'border-gold bg-gold/5 shadow-md' 
@@ -992,6 +791,39 @@ const ReservationSystem: React.FC = () => {
                             </button>
                         </div>
                         
+                        {/* Doplnky Selection */}
+                            <div className="mb-10">
+                                <h4 className="text-sm uppercase tracking-[0.15em] font-medium text-text-dark mb-4">Máte zájem o doplňkovou péči? (volitelné)</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {SERVICES_LIST.filter(s => s.id === 12 || s.id === 13).map((addon) => {
+                                        const isSelected = selectedAddons.includes(addon.id);
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={addon.id}
+                                                onClick={() => { setSelectedAddons(prev => prev.includes(addon.id) ? prev.filter(id => id !== addon.id) : [...prev, addon.id]); }}
+                                                className={`group flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-300 ${
+                                                    isSelected 
+                                                    ? 'border-gold bg-gold/5 shadow-sm' 
+                                                    : 'border-gold/20 hover:border-gold/50 bg-transparent'
+                                                }`}
+                                            >
+                                                <div className={`mt-1 shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-gold border-gold text-white' : 'border-gold/40 text-transparent group-hover:border-gold/70'}`}>
+                                                    <Check size={14} />
+                                                </div>
+                                                <div>
+                                                    <div className={`font-serif text-lg mb-1 leading-tight ${isSelected ? 'text-gold-dark' : 'text-text-dark group-hover:text-gold-dark'}`}>
+                                                        {addon.title.replace(' (Doplňková služba)', '')}
+                                                    </div>
+                                                    <div className="text-sm font-medium text-text-dark mb-2">{addon.price} <span className="text-text-muted font-light">/ {addon.duration}</span></div>
+                                                    <div className="text-xs text-text-muted font-light leading-relaxed">{addon.description}</div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                         <div className="mb-10">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-text-dark text-sm uppercase tracking-[0.15em] font-medium flex items-center gap-2">
@@ -1276,38 +1108,6 @@ const disabled = isPast || !hasSlots;
                                 </label>
                             </div>
 
-                            {/* Doplnky Selection */}
-                            <div className="pt-6 pb-2 border-t border-gold/10 mt-6">
-                                <h4 className="text-sm uppercase tracking-[0.15em] font-medium text-text-dark mb-4">Máte zájem o doplňkovou péči? (volitelné)</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {SERVICES_LIST.filter(s => s.id === 12 || s.id === 13).map((addon) => {
-                                        const isSelected = selectedAddons.includes(addon.id);
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={addon.id}
-                                                onClick={() => setSelectedAddons(prev => prev.includes(addon.id) ? prev.filter(id => id !== addon.id) : [...prev, addon.id])}
-                                                className={`group flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-300 ${
-                                                    isSelected 
-                                                    ? 'border-gold bg-gold/5 shadow-sm' 
-                                                    : 'border-gold/20 hover:border-gold/50 bg-transparent'
-                                                }`}
-                                            >
-                                                <div className={`mt-1 shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-gold border-gold text-white' : 'border-gold/40 text-transparent group-hover:border-gold/70'}`}>
-                                                    <Check size={14} />
-                                                </div>
-                                                <div>
-                                                    <div className={`font-serif text-lg mb-1 leading-tight ${isSelected ? 'text-gold-dark' : 'text-text-dark group-hover:text-gold-dark'}`}>
-                                                        {addon.title.replace(' (Doplňková služba)', '')}
-                                                    </div>
-                                                    <div className="text-sm font-medium text-text-dark mb-2">{addon.price} <span className="text-text-muted font-light">/ {addon.duration}</span></div>
-                                                    <div className="text-xs text-text-muted font-light leading-relaxed">{addon.description}</div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
 
                             
                             <div className="flex items-start gap-3 mt-4">
